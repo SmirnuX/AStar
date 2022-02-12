@@ -1,120 +1,49 @@
 #ifndef COLLISION_H
 #define COLLISION_H
 #include <QPainter>
-//Обработка столкновений
-
-class Point //Класс точки
-{
-protected:
-    //Координаты точки
-    float x;
-    float y;
-public:
-    Point()
-    {
-
-    }
-
-    Point(float _x, float _y);
-
-    bool operator== (const Point &b) const;    //Равенство двух точек
-    bool operator!= (const Point &b) const;
-    //Передвижение точки
-    virtual void MoveTo(float _x, float _y);  //Передвинуть в указанную позицию
-    virtual void Drag(float dx, float dy);  //Передвинуть на dx пикселей по горизонтали и на dy по вертикали
-    virtual void Turn(double angle, Point& pivot);    //Повернуть точку относительно точки pivot
-    //Получение координат
-    float GetX();
-    float GetY();
-};
-
-class Line  //Класс линии
-{
-public:
-    Line(Point p1, Point p2);   //Задание линии от точки p1 до p2.
-    ~Line();
-    void Update();  //Обновить k, b и проверить min_p и max_p
-    void Turn(double angle, Point &pivot);
-    double k;
-    double b;
-    Point* min_p;  //Левая точка (min x)
-    Point* max_p;  //Правая точка (max x)
-};
-
-class Circle   //Окружность
-{
-public:
-    Circle(float _x, float _y, float _r);   //Создание окружности
-    ~Circle();
-    Point* center;  //Центр окружности
-    float r;    //Радиус окружности
-};
-
-class Polygon //Многоугольник
-{
-    float angle;    //Угол относительно начального расположения многоугольника
-public:
-    Polygon(double* x_s, double* y_s, int num);  //НЕ СДЕЛАНО (и деструктор)
-    ~Polygon();
-    unsigned int num;   //Количество точек в многоугольнике
-    Point** orig_points; //Массив точек многоугольника
-    Point** points; //Точки многоугольника с учетом поворота
-
-    void Turn(double angle, Point &pivot);   //TODO - продумать реализацию
-
-};
-
-//Обработка столкновений
+#include "add_math.h"
+#include "objects.h"
 
 class PointCollider;
 class LineCollider;
 class CircleCollider;
 class PolygonCollider;
 
-class Collider:public Point  //Интерфейс столкновений
+class Collider: public Point  //Collision base class
 {
 public:
-    double angle;
-    int collisions;
+    Angle angle;
+    int collisions; //Count of collisions
 
-    Collider(double o_x, double o_y);
-    //virtual bool CheckCollision2(Collider* other) = 0;           //Проверка пересечения с неизвестным обьектом
+    Collider(double o_x, double o_y);   //Collider with origin point in (o_x, o_y)
+    virtual ~Collider();
 
+    virtual bool CheckCollision(Collider* other) = 0;           //Collision with unknown object
+    virtual bool CheckCollision(PointCollider* other) = 0;      //Collision with point
+    virtual bool CheckCollision(LineCollider* other) = 0;       //Collision with line
+    virtual bool CheckCollision(CircleCollider* other) = 0;     //Collision with circle
+    virtual bool CheckCollision(PolygonCollider* other) = 0;    //Collision with polygon
+    virtual void ShowCollider() = 0;                            //Drawing collision mask
 
-    virtual bool CheckCollision(Collider* other) = 0;           //Проверка пересечения с неизвестным обьектом
-    virtual bool CheckCollision(PointCollider* other) = 0;              //Проверка пересечения с точкой
-    virtual bool CheckCollision(LineCollider* other) = 0;               //Проверка пересечения с линией
-    virtual bool CheckCollision(CircleCollider* other) = 0;     //Проверка пересечения с кругом
-    virtual bool CheckCollision(PolygonCollider* other) = 0;            //Проверка пересечения с многоугольником
-    virtual void ShowCollider() = 0;           //Отрисовка коллайдера
-\
-    virtual void Turn(double angle) = 0;    //Поворот относительно центра (o_x; o_y) в конструкторе
-    virtual void SetAngle(double angle);
+    virtual void SetAngle(Angle _angle);
 
-    //virtual void UpdateBoundingBox(float x, float y) = 0;   //Обновить координаты
-    //Polygon* BoundingBox;   //Прямоугольник для первичной проверки.
+    //virtual void UpdateBoundingBox(double x, double y) = 0;
+    //Polygon* BoundingBox;
+    //bool CheckSimpleCollision(Collider* other);   //Check collision of bounding boxes
 };
 
 class PointCollider : public Collider
 {
 public:
-    Point* point;
-
-    PointCollider(float _x, float _y);
+    PointCollider(double _x, double _y);
     ~PointCollider();
 
-    bool CheckCollision(Collider* other);           //Проверка пересечения с неизвестным обьектом
-    bool CheckCollision(PointCollider* other);              //Проверка пересечения с точкой
-    bool CheckCollision(LineCollider* other);               //Проверка пересечения с линией
-    bool CheckCollision(CircleCollider* other);     //Проверка пересечения с кругом
-    bool CheckCollision(PolygonCollider* other);            //Проверка пересечения с многоугольником
-    void ShowCollider();                            //Отрисовка коллайдера
-
-    void MoveTo(float _x, float _y);  //Передвинуть в указанную позицию
-    void Drag(float dx, float dy);  //Передвинуть на dx пикселей по горизонтали и на dy по вертикали
-    void Turn(double angle, Point& pivot);    //Повернуть точку относительно точки pivot
-    void Turn(double angle);    //Поворот относительно центра - точка просто остается на месте
-
+    bool CheckCollision(Collider* other);           //Collision with unknown object
+    bool CheckCollision(PointCollider* other);      //Collision with point
+    bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(CircleCollider* other);     //Collision with circle
+    bool CheckCollision(PolygonCollider* other);    //Collision with polygon
+    void ShowCollider();                            //Drawing collision mask
 };
 
 class LineCollider : public Collider
@@ -122,21 +51,21 @@ class LineCollider : public Collider
 public:
     Line* line;
 
-    LineCollider(float x1, float y1, float x2, float y2);
+    LineCollider(double x1, double y1, double x2, double y2);
     ~LineCollider();
 
-    bool CheckCollision(Collider* other);           //Проверка пересечения с неизвестным обьектом
-    bool CheckCollision(PointCollider* other);      //Проверка пересечения с точкой
-    bool CheckCollision(LineCollider* other);       //Проверка пересечения с линией
-    bool CheckCollision(CircleCollider* other);     //Проверка пересечения с кругом
-    bool CheckCollision(PolygonCollider* other);            //Проверка пересечения с многоугольником
-    void ShowCollider();                            //Отрисовка коллайдера
+    bool CheckCollision(Collider* other);           //Collision with unknown object
+    bool CheckCollision(PointCollider* other);      //Collision with point
+    bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(CircleCollider* other);     //Collision with circle
+    bool CheckCollision(PolygonCollider* other);    //Collision with polygon
+    void ShowCollider();
 
-    void MoveTo(float _x, float _y);  //Передвинуть в указанную позицию - при этом передвигается первая точка линии, вторая двигается за ней
-    void Drag(float dx, float dy);  //Передвинуть на dx пикселей по горизонтали и на dy по вертикали
-    void Turn(double angle, Point& pivot);    //Повернуть линию относительно pivot
-    void Turn(double angle);    //Поворот относительно первой точки
-    void SetAngle(double angle);   //Установка угла относительно первой точки
+    void MoveTo(double _x, double _y);    //Move first point to (_x, _y) - second point will follow
+    void Drag(double dx, double dy);
+    void Turn(Angle angle, Point& pivot);
+    void Turn(Angle angle); //Rotate relative to left point
+    void SetAngle(Angle angle);
 };
 
 class CircleCollider : public Collider
@@ -144,20 +73,15 @@ class CircleCollider : public Collider
 public:
     Circle* circle;
 
-    CircleCollider(float _x, float _y, float _r);
+    CircleCollider(double _x, double _y, double _r);
     ~CircleCollider();
 
-    bool CheckCollision(Collider* other);           //Проверка пересечения с неизвестным обьектом
-    bool CheckCollision(PointCollider* other);      //Проверка пересечения с точкой
-    bool CheckCollision(LineCollider* other);       //Проверка пересечения с линией
-    bool CheckCollision(CircleCollider* other);     //Проверка пересечения с кругом
-    bool CheckCollision(PolygonCollider* other);            //Проверка пересечения с многоугольником
+    bool CheckCollision(Collider* other);           //Collision with unknown object
+    bool CheckCollision(PointCollider* other);      //Collision with point
+    bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(CircleCollider* other);     //Collision with circle
+    bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider();
-
-    void MoveTo(float _x, float _y);  //Передвинуть центр в указанную позицию
-    void Drag(float dx, float dy);  //Передвинуть центр на dx пикселей по горизонтали и на dy по вертикали
-    void Turn(double angle, Point& pivot);    //Повернуть круг вокруг pivot
-    void Turn(double angle);    //Поворот относительно центра - круг просто остается на месте
 };
 
 class PolygonCollider : public Collider
@@ -170,18 +94,18 @@ public:
     PolygonCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y);
     ~PolygonCollider();
 
-    bool CheckCollision(Collider* other);           //Проверка пересечения с неизвестным обьектом
-    bool CheckCollision(PointCollider* other);      //Проверка пересечения с точкой
-    bool CheckCollision(LineCollider* other);       //Проверка пересечения с линией
-    bool CheckCollision(CircleCollider* other);     //Проверка пересечения с кругом
-    bool CheckCollision(PolygonCollider* other);            //Проверка пересечения с многоугольником
+    bool CheckCollision(Collider* other);           //Collision with unknown object
+    bool CheckCollision(PointCollider* other);      //Collision with point
+    bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(CircleCollider* other);     //Collision with circle
+    bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider();
 
-    void MoveTo(float _x, float _y);  //Передвинуть центр в указанную позицию
-    void Drag(float dx, float dy);  //Передвинуть центр на dx пикселей по горизонтали и на dy по вертикали
-    void Turn(double angle, Point& pivot);    //Повернуть круг вокруг pivot
-    void Turn(double angle);    //Поворот относительно центра - круг просто остается на месте
-    void SetAngle(double angle);
+    void MoveTo(double _x, double _y);  //Move origin to _x, _y
+    void Drag(double dx, double dy);
+    void Turn(Angle angle, Point& pivot);
+    void Turn(Angle angle);
+    void SetAngle(Angle angle);
 };
 
 

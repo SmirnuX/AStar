@@ -1,9 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define EPSILON 0.001   //TODO - переделать через constexpr
-
-//Класс, в котором и происходит вся движуха
 #include <QApplication>
 #include <QMainWindow>
 #include <QEvent>
@@ -28,16 +25,14 @@ extern bool SHOW_COLLIDERS;
 class Tank;
 class EntityStack;
 
-class game : public QMainWindow //Основное окно, в котором запускается игра
+class game : public QMainWindow //Main window
 {
     Q_OBJECT
 private:
-    int width;  //Ширина окна
-    int height; //Высота окна
-    bool key[6];    //Буфер ввода (для поддержки одновременного нажатия кнопок клавиатуры)
-    //Entity **entities;   //Указатель на массив объектов, расположенных на уровне
-    //int entities_count;  //Количество обьектов в массиве
-    graph* path_graph;  //Граф для поиска путей
+    int width;  //Window width
+    int height; //Height width
+    bool key[6];    //Input buffer
+    graph* path_graph;
     EntityStack *visible;
     int target_x;
     int target_y;
@@ -46,22 +41,22 @@ private:
     bool SHOW_PATH;
     Ui_DebugMenu* Menu;
 public:
-    Tank* player;  //Указатель на танк игрока
-    Box* box;   //Указатель на коробку для обхезда ТЕСТ
-    //TODO - добавить второй танк
-    game(int w, int h, QWidget *parent = 0);    //Конструктор окна размером w x h пикселей
-    ~game();    //TODO - сделать очистку памяти
-    //Методы класса
-    bool event(QEvent* ev);    //Обработчик событий
-    void mousePressEvent(QMouseEvent *event);   //Обработчик событий мыши
-    void paintEvent(QPaintEvent* ); //Отрисовка буфера в окне
+    Tank* player;  //Player tank
+    Box* box;
+    game(int w, int h, QWidget *parent = 0);
+    ~game();
+
+
+    QTimer* timer;
+    bool event(QEvent* ev);    //Event handler
+    void mousePressEvent(QMouseEvent *event);   //Mouse event handler
+    void paintEvent(QPaintEvent* ); //Drawing buffer
     void uiUpdate();
-    //Получение значений
+
     int GetW();
     int GetH();
 public slots:
-    //Методы класса
-    void game_update(); //Действие, выполняемое каждый такт
+    void game_update(); //One tact of game
     void player_set_path();
 };
 
@@ -70,7 +65,7 @@ class Path
 public:
     int num;
     int i;
-    double* x;
+    double* x;  //Array of: coords, angles and speeds on every segment of path
     double* y;
     double* a;
     double* s;

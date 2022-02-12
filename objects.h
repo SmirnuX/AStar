@@ -1,9 +1,8 @@
 #ifndef OBJECTS_H
 #define OBJECTS_H
 
-//Иерархия сущностей и движимых сущностей
-
 #include "collision.h"
+#include "add_math.h"
 #include "list.h"
 #include <math.h>
 #include <QThread>
@@ -13,85 +12,132 @@
 #include <QColor>
 #include <QPoint>
 
+class Point
+{
+protected:
+    double x;
+    double y;
+public:
+    Point();    //Uninitialized
+    Point(double _x, double _y);
+    virtual ~Point();
 
-class Entity: public Point   //Базовый класс сущностей
+    bool operator== (const Point &b) const;    //Check for equality
+    bool operator!= (const Point &b) const;
+
+    virtual void MoveTo(double _x, double _y);
+    virtual void Drag(double dx, double dy);
+    virtual void Turn(Angle angle, Point& pivot);
+    virtual void Turn(Angle angle); //Doesn't make sense for point, but in derived classes
+
+    double GetX();
+    double GetY();
+};
+
+class Line
+{
+private:
+    Point* min_p;  //Left point (min x)
+    Point* max_p;  //Right point (max x)
+public:
+    Line(Point p1, Point p2);
+    ~Line();
+    void Set(double x1, double y1, double x2, double y2);
+    void Update();  //Update line equation
+    void Turn(Angle angle, Point& pivot);
+    double a, b, c;
+    double GetMinX();
+    double GetMaxX();
+    double GetMinY();
+    double GetMaxY();
+};
+
+class Circle: public Point
+{
+protected:
+    double r;
+public:
+    Circle(double _x, double _y, double _r);
+    ~Circle();
+
+    double GetR();
+};
+
+//=== Entities ===
+
+class Entity: public Point   //Base entity class
 {
 protected:
 
 public:
     Entity(float _x, float _y, Collider* _collider = NULL);
-    Collider* collision_mask;   //Маска столкновений
-    //Отрисовка
-    virtual void Show() = 0; //Отрисовать сущность
-    virtual void Hide() = 0; //Скрыть сущность
+    virtual ~Entity();
+    Collider* collision_mask;
 
-    //Функции, выполняющиеся каждый такт
-    void EntityUpdate();  //Функция, вызываемая каждый такт. В отличии от OnStep, не должна изменяться в дочерних классах
-    virtual void AutoMove();    //Движение согласно скорости и углу объекта
-    virtual void OnStep();  //Действие, которое выполняет сущность каждый такт
+    virtual void Show() = 0; //Draw entity
 
-    //Передвижение точки
-    void MoveTo(float _x, float _y);  //Передвинуть в указанную позицию
-    void Drag(float dx, float dy);  //Передвинуть на dx пикселей по горизонтали и на dy по вертикали
+    //Functions, that calls every tact
+    void EntityUpdate();        //Function, that is called every tact. This function MUST BE NOT CHANGED.
+    virtual void AutoMove();    //Movement, depending of current speed and angle (isn't implemented in this class, cause static entity should not move)
+    virtual void OnStep();      //Action, that is happening every tact.
 
-    //Получение информации
-    virtual QString GetName();  //Получить название обьекта
-    virtual QString GetInfo();  //Получить информацию об обьекте
-    //Проверка столкновения
-    //void CheckPosition(float _x, float _y);  //Проверяет столкновения при перемещении сущности в точку (_x; _y)
+    //Movement
+    void MoveTo(double _x, double _y);
+    void Drag(double dx, double dy);
 
+    //Getting info
+    virtual QString GetName();  //Get name of an object
+    virtual QString GetInfo();  //Get info of an object
 };
 
-class MovingEntity: public Entity  //Класс движущихся сущностей
+class MovingEntity: public Entity  //Base moving entity class
 {
 protected:
-    double speed;   //Скорость объекта
+    double speed;   //Speed of entity
     double max_speed;
-    float angle;    //Угол поворота объекта
+    Angle angle;    //Angle of entity
 public:
-    MovingEntity(float _x, float _y, double _speed = 0, float _angle = 0, Collider* _collider = NULL);
+    MovingEntity(double _x, double _y, double _speed = 0, Angle _angle = 0, Collider* _collider = nullptr);
 
-    //Функции, выполняющиеся каждый такт
-    void AutoMove();    //Движение согласно скорости и углу объекта
+    //Functions, that calls every tact
+    void AutoMove();    //Movement, depending of current speed and angle
 
-    //Изменение свойств объекта
-    void Turn(float _angle);    //Поворот сущности
-    void SetSpeed(double _speed); //Установка скорости
-    void SetAngle(float _angle);    //Установка угла
+    //Changing variables
+    void Turn(Angle d_angle);    //Change angle by d_angle
+    void SetSpeed(double _speed);
+    void SetAngle(Angle _angle);    //Setting angle to _angle
 
-    //Получение информации
-    QString GetName();  //Получить название обьекта
-    QString GetInfo();
+    //Getting info
+    virtual QString GetName();
+    virtual QString GetInfo();
 
-    //Получение значений
+    //Getting variables
     double GetSpeed();
-    float GetAngle();
+    Angle GetAngle();
 };
 
-class Wall: public Entity   //Вертикальная стена
+//=== Objects ===
+
+class Wall: public Entity   //Vertical wall
 {
 public:
-    Wall(float _x, float _y);
-    ~Wall();
+    Wall(double _x, double _y);
 
     void Show();
-    void Hide();
 
-    //Получение информации
-    QString GetName();  //Получить название обьекта
+    //Getting info
+    QString GetName();
 };
 
-class Box: public Entity    //Коробка, которую надо обьехать
+class Box: public Entity    //Square box
 {
 public:
-    Box(float _x, float _y);
-    ~Box();
-    double a;
+    Box(double _x, double _y);
+    double a;   //side of box
     void Show();
-    void Hide();
 
-    //Получение информации
-    QString GetName();  //Получить название обьекта
+    //Getting info
+    QString GetName();
 };
 
 #endif // OBJECTS_H

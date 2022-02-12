@@ -1,6 +1,8 @@
 #ifndef UI_H
 #define UI_H
 
+//Code generated in QT Creator
+
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
 #include <QApplication>

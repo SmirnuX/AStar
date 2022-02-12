@@ -1,75 +1,87 @@
 #ifndef TANKS_H
 #define TANKS_H
 
-//Танки и снаряды
+//Tanks and projectiles
 
 #include "game.h"
+#include "add_math.h"
+#include "objects.h"
 
 class graph;
 
-class BaseTank: public MovingEntity //Базовый класс танка
+class BaseTank: public MovingEntity //Base tank class
 {
 protected:
-    //Переменные
-    float cannon_angle; //Угол поворота башни
-    //Характеристики
-    float FOV_distance; //Радиус зрения танка
-    float FOV_angle;    //Угол зрения танка
-    float tank_speed;   //Скорость движения танка
-    float acc;          //Ускорение танка
-    float dec;          //Торможение танка
-    float rot_speed;    //Скорость поворота
-    int rel_time;   //Скорость перезарядки
-    //Характеристики корпуса
-    int base_width; //Ширина корпуса
-    int base_length;    //Длина корпуса
-    int cannon_width;   //Ширина пушки
-    int cannon_length;  //Длина пушки
+    //Variables
+    Angle cannon_angle; //Rotation of tank head
+    //Properties
+    double FOV_distance; //Radius of FOV
+    Angle FOV_angle;    //Angle of FOV
+    double tank_speed;  //Max tank speed
+    double acc;         //Acceleration of tank
+    double dec;         //Decceleration of tank
+    double rot_speed;   //Speed of rotating tank head
+    int rel_time;       //Reload timeout
+    //Base properties
+    int base_width;     //Width
+    int base_length;    //length
+    int cannon_width;   //Cannon width
+    int cannon_length;  //Cannon length
 public:
     Collider* FOV_collider;
-    float reload_timeout;   //Время, оставшееся до возможности следующего выстрела
-    BaseTank(float _x, float _y);
-    void Show();    //Отрисовка танка
-    void Hide();    //Скрытие танка
-    virtual void ShowTracks() = 0;  //Отрисовка гусениц танка
-    virtual void ShowBase() = 0;  //Отрисовка корпуса танка
-    virtual void ShowCannon() = 0;  //Отрисовка пушки танка
-    virtual void HideTracks() = 0;  //Сокрытие гусениц танка
-    virtual void HideBase() = 0;  //Сокрытие корпуса танка
-    virtual void HideCannon() = 0;  //Сокрытие пушки танка
+    double reload_timeout;   //Timeout before next shot
+    BaseTank(double _x, double _y);
+    void Show();    //Drawing tank
+    virtual void ShowTracks() = 0;  //Drawing tracks
+    virtual void ShowBase() = 0;    //Drawing base
+    virtual void ShowCannon() = 0;  //Drawing of head
 
-    void ShowFOV(QPainter* pic_pntr, float _x, float _y); //Отрисовка поля зрения танка
-    void HideFOV(QPainter* pic_pntr, float _x, float _y); //Сокрытие поля зрения танка
+    void ShowFOV(QPainter* pic_pntr, double _x, double _y); //Draw FOV
 
-    virtual void Shoot() = 0;   //Выстрел
-    void SetCannonAngle(double _angle); //Повернуть пушку танка
+    virtual void Shoot() = 0;
+    void SetCannonAngle(Angle _angle);  //Setting angle of cannon
 
-    void Accelerate()   //Ускорение
+    void Accelerate()   //Full acceleration
     {
         Accelerate(acc);
     }
 
-    void Accelerate(double _acc)
+    void Accelerate(double _acc)    //Acceleration by _acc amount
     {
-        SetSpeed(speed + _acc);
+        if (_acc < acc)
+        {
+            SetSpeed(GetSpeed() + _acc);
+        }
+        else
+        {
+            SetSpeed(GetSpeed() + _acc);
+        }
+
     }
 
-    void Deccelerate()  //Торможение/обратный ход
+    void Deccelerate()
     {
         Deccelerate(dec);
     }
 
     void Deccelerate(double _dec)
     {
-        SetSpeed(speed - _dec);
+        if (_dec < dec)
+        {
+            SetSpeed(GetSpeed() - _dec);
+        }
+        else
+        {
+            SetSpeed(GetSpeed() - _dec);
+        }
     }
 
-    void Rotate(double delta_angle)   //Поворот
+    void Rotate(Angle delta_angle)   //Rotating
     {
-        if (delta_angle > rot_speed)
-            delta_angle = rot_speed;
-        if (delta_angle < -rot_speed)
-            delta_angle = -rot_speed;
+        if (delta_angle.GetD() > rot_speed)
+            delta_angle = Angle(rot_speed);
+        if (delta_angle.GetD() < -rot_speed)
+            delta_angle = Angle(-rot_speed);
         Turn(delta_angle);
     }
 
@@ -98,22 +110,19 @@ public:
     void Shoot();
     void OnStep();
 
-    void ShowTracks();  //Отрисовка гусениц танка
-    void ShowBase();  //Отрисовка корпуса танка
-    void ShowCannon();  //Отрисовка пушки танка
-    void HideTracks();  //Сокрытие гусениц танка
-    void HideBase();  //Сокрытие корпуса танка
-    void HideCannon();  //Сокрытие пушки танка
+    void ShowTracks();
+    void ShowBase();
+    void ShowCannon();
 
-    void RideTo(Box* obstacle); //ТЕСТ обьезд квдарата
+    void RideTo(Box* obstacle); //[TEST] Driving over box
 
-    void BuildPath(double tx, double ty);  //Построение ПРОСТОГО пути
-    void BuildPath(double tx, double ty, Box* obstacle);    //ТЕСТ Обьезд коробки
-    void graph_to_path(graph* gr);  //Построение пути на основании графа
-    void ShowPath();
-    void FollowPath();
-    //Получение информации
-    QString GetName();  //Получить название обьекта
+    void BuildPath(double tx, double ty);  //Creating simple path
+    void BuildPath(double tx, double ty, Box* obstacle);    //[ТЕСТ] Driving over box
+    void graph_to_path(graph* gr, uint target = 1);  //Building path from graph
+    void ShowPath();    //Drawing path
+    void FollowPath();  //Following path
+
+    QString GetName();
 };
 
 class EnemyTank: public BaseTank
@@ -123,15 +132,11 @@ public:
     ~EnemyTank();
     void Shoot();
     void OnStep();
-    void ShowTracks();  //Отрисовка гусениц танка
-    void ShowBase();  //Отрисовка корпуса танка
-    void ShowCannon();  //Отрисовка пушки танка
-    void HideTracks();  //Сокрытие гусениц танка
-    void HideBase();  //Сокрытие корпуса танка
-    void HideCannon();  //Сокрытие пушки танка
+    void ShowTracks();
+    void ShowBase();
+    void ShowCannon();
 
-    //Получение информации
-    QString GetName();  //Получить название обьекта
+    QString GetName();
 };
 
 class BaseBullet: public MovingEntity
@@ -147,11 +152,10 @@ class Bullet: public BaseBullet
 public:
     Bullet(float _x, float _y, double _angle, Entity* _parent = NULL);
     void Show();
-    void Hide();
     void OnStep();
 
-    //Получение информации
-    QString GetName();  //Получить название обьекта
+
+    QString GetName();
 };
 
 #endif // TANKS_H

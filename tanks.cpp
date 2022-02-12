@@ -3,7 +3,7 @@ extern EntityStack* stack;
 
 //-------Реализация функций класса BaseTank-------
 
-BaseTank::BaseTank(float _x, float _y):MovingEntity(_x, _y, 0, 0, NULL)
+BaseTank::BaseTank(double _x, double _y):MovingEntity(_x, _y, 0, 0, nullptr)
 {
     cannon_angle = 0; //Угол поворота башни
     reload_timeout = 0;   //Время, оставшееся до возможности следующего выстрел
@@ -18,31 +18,15 @@ void BaseTank::Show()   //Отрисовка танка
         FOV_collider->ShowCollider();
 }
 
-void BaseTank::Hide()   //Скрытие танка
-{
-    HideTracks();
-    HideBase();
-    HideCannon();
-}
-
-void BaseTank::ShowFOV(QPainter* pic_pntr, float _x, float _y) //Отрисовка поля зрения танка
+void BaseTank::ShowFOV(QPainter* pic_pntr, double _x, double _y) //Отрисовка поля зрения танка
 {
     QBrush Brush(QColor(255, 0, 0, 20));
     pic_pntr->setPen(QColor(0, 0, 0, 0));
     pic_pntr->setBrush(Brush);
-    pic_pntr->drawPie(_x-FOV_distance, _y-FOV_distance, 2 * FOV_distance, 2 * FOV_distance, (angle + cannon_angle - FOV_angle) * 16, FOV_angle * 32);
+    pic_pntr->drawPie(_x-FOV_distance, _y-FOV_distance, 2 * FOV_distance, 2 * FOV_distance, (angle + cannon_angle - FOV_angle).GetD() * 16, FOV_angle.GetD() * 32);
 }
 
-void BaseTank::HideFOV(QPainter* pic_pntr, float _x, float _y) //Сокрытие поля зрения танка
-{
-    QBrush Brush(QColor(255, 255, 255));
-    pic_pntr->setPen(QColor(0, 0, 0, 0));
-    pic_pntr->setBrush(Brush);
-    pic_pntr->drawPie(_x-FOV_distance, _y-FOV_distance, 2 * FOV_distance, 2*FOV_distance, (angle + cannon_angle - FOV_angle) * 16, FOV_angle * 32);
-
-}
-
-void BaseTank::SetCannonAngle(double _angle) //Повернуть пушку танка
+void BaseTank::SetCannonAngle(Angle _angle) //Повернуть пушку танка
 {
     //Hide();
     cannon_angle = _angle;
@@ -71,12 +55,12 @@ Tank::Tank(float _x, float _y):BaseTank(_x,_y)
     //Столкновения
     double x_s[4] = {x + base_length/2, x + base_length/2, x - base_length/2, x - base_length/2};
     double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
-    collision_mask = new PolygonCollider(x_s, y_s, 4, x, y);
+    collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
 
     //Зрение
     double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
     double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
-    FOV_collider = new LineCollider(tower_x, tower_y, tower_x + FOV_distance, tower_y);
+    FOV_collider = (Collider*) new LineCollider(tower_x, tower_y, tower_x + FOV_distance, tower_y);
 }
 
 Tank::~Tank()
@@ -110,7 +94,7 @@ void Tank::OnStep()
     //Зрение
     double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
     double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
-    FOV_collider->MoveTo(tower_x, tower_y);
+     ((Point*)FOV_collider)->MoveTo(tower_x, tower_y);
     FOV_collider->SetAngle(degtorad(cannon_angle + angle));
 
 
@@ -257,7 +241,7 @@ void Bullet::Hide()
 
 void Bullet::OnStep()
 {
-    if (x < -50 || x > 2000 || y < -50 || y > 1200)
+    if (x < -50 || x >  2000 || y < -50 || x > 1200)
     {
         stack->Delete(this);
     }

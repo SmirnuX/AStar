@@ -1,79 +1,103 @@
 #ifndef ADD_MATH_H
 #define ADD_MATH_H
 
-#define EPSILON 0.001
+constexpr double EPSILON = 0.001;
 
 #include <math.h>
+#include "objects.h"
 #include "collision.h"
-//Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Рµ РјР°С‚РµРјР°С‚РёС‡РµСЃРєРёРµ С„СѓРЅРєС†РёРё
 
-//=== РўР РР“РћРќРћРњР•РўР РРЇ ===
-double degtorad(double angle);  //РџРµСЂРµРІРѕРґ РёР· РіСЂР°РґСѓСЃРѕРІ РІ СЂР°РґРёР°РЅС‹
-double radtodeg(double angle);  //РџРµСЂРµРІРѕРґ РёР· СЂР°РґРёР°РЅ РІ РіСЂР°РґСѓСЃС‹
+//Trigonometry
+double degtorad(double angle);  //Convert degrees to radians
+double radtodeg(double angle);  //Convert radians to degrees
 
-double direction_to_point(double from_x, double from_y, double to_x, double to_y);  //РЈРіРѕР» РјРµР¶РґСѓ РґРІСѓРјСЏ С‚РѕС‡РєР°РјРё
-double anglediff(double a, double b);    //Р Р°Р·РЅРѕСЃС‚СЊ РґРІСѓС… СѓРіР»РѕРІ РІ С„РѕСЂРјР°С‚Рµ РѕС‚ - 180 РґРѕ 180
+double direction_to_point(double from_x, double from_y, double to_x, double to_y);  //Calculate driection from (from_x, from_y) to (to_x, to_y)
+double anglediff(double a, double b);    //Angle difference in range from -180 to 180
 
-double safe_acos(double ang);   //Р‘РµР·РѕРїР°СЃРЅР°СЏ С„СѓРЅРєС†РёСЏ Р°СЂРєРєРѕСЃРёРЅСѓСЃР°
-double safe_asin(double ang);
+double safe_acos(double cos);   //If safe_acos is called with cos > 1 or < -1, it converts it to nearest right value
+double safe_asin(double sin);
 
 
-//=== РџРµСЂРµСЃРµС‡РµРЅРёСЏ ===
-Point* circle_tangent(double cx, double cy, double cr, double a, double b, double c);    //РџРѕРёСЃРє РїРµСЂРµСЃРµС‡РµРЅРёСЏ РїСЂСЏРјРѕР№ Рё РѕРєСЂСѓР¶РЅРѕСЃС‚Рё
-double solve_square1(double a, double b, double c); //Р РµС€РµРЅРёРµ РєРІР°РґСЂР°С‚РЅРѕРіРѕ СѓСЂР°РІРЅРµРЅРёСЏ
+double distance2(double ax, double ay, double bx, double by);  //Square distacnce between points
+double distance2(Point a, Point b);
 
-//=== РџСЂРѕС‡РёРµ РјР°С‚РµРјР°С‚РёС‡РµСЃРєРёРµ С„СѓРЅРєС†РёРё ===
-double distance2(double ax, double ay, double bx, double by);  //Р”РёСЃС‚Р°РЅС†РёСЏ РјРµР¶РґСѓ С‚РѕС‡РєР°РјРё РІ РєРІР°РґСЂР°С‚Рµ
-double distance2(Point a, Point b); //Р”РёСЃС‚Р°РЅС†РёСЏ РјРµР¶РґСѓ С‚РѕС‡РєР°РјРё РІ РєРІР°РґСЂР°С‚Рµ
+double distance(double ax, double ay, double bx, double by);  //Distance between points
+double distance(Point a, Point b);
 
-double distance(double ax, double ay, double bx, double by);  //Р”РёСЃС‚Р°РЅС†РёСЏ РјРµР¶РґСѓ С‚РѕС‡РєР°РјРё
-double distance(Point a, Point b); //Р”РёСЃС‚Р°РЅС†РёСЏ РјРµР¶РґСѓ С‚РѕС‡РєР°РјРё
 
-double sign(double a);  //Р—РЅР°Рє С‡РёСЃР»Р°
-bool almostEq(double a, double b, double eps = EPSILON);  //Р Р°РІРЅС‹ Р»Рё РґСЂСѓРі РґСЂСѓРіСѓ С‡РёСЃР»Р° a Рё b СЃ РїРѕРіСЂРµС€РЅРѕСЃС‚СЊСЋ EPSILON
+double sign(double a);  //1 if a >=0, -1 if a<0
+bool almostEq(double a, double b, double eps = EPSILON);  //Are delta between a and b lesser then eps
+bool intersect(double a1, double a2, double b1, double b2); //Does (a1,a2) and (b1, b2) intersect.
+Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double c2); //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
 
-void DrawTurnedRect(QPainter* painter, double x, double y, double angle, double width, double height);  //РћС‚СЂРёСЃРѕРІРєР° РїРѕРІРµСЂРЅСѓС‚РѕРіРѕ РїСЂСЏРјРѕСѓРіРѕР»СЊРЅРёРєР°
+void DrawTurnedRect(QPainter* painter, double x, double y, double angle, double width, double height);
 
-class Angle //РљР»Р°СЃСЃ СѓРіР»Р°
+//Angle class
+class Angle
 {
 private:
-    double angle;   //РЈРіРѕР» РІ СЂР°РґРёР°РЅР°С… РѕС‚ 0 РґРѕ 2PI
+    double angle;   //Angle in radians between 0 and 2PI
 public:
 
-    Angle();            //РџСѓСЃС‚РѕР№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
-    Angle(double a);    //РџСЂРѕСЃС‚РѕР№ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ
+    Angle();            //Uninitialized angle
+    Angle(double rad);
 
-    void CorrectAngle();
+    void CorrectAngle();    //Correct angle to be in range from 0 to 2PI
 
-    double GetR();  //РџРѕР»СѓС‡РёС‚СЊ СѓРіРѕР» РІ СЂР°РґРёР°РЅР°С…
-    double GetD();  //РџРѕР»СѓС‡РёС‚СЊ СѓРіРѕР» РІ РіСЂР°РґСѓСЃР°С… (РѕС‚ 0 РґРѕ 360)
+    double GetR() const;    //Get angle in radians
+    double GetD() const ;   //Get angle in degrees
 
-    Angle normalL();   //Р›РµРІС‹Р№ РїРµСЂРїРµРЅРґРёРєСѓР»СЏСЂ
-    Angle normalR();   //РџСЂР°РІС‹Р№ РїРµСЂРїРµРЅРґРёРєСѓР»СЏСЂ
+    Angle normalL() const;   //Get left normal
+    Angle normalR() const;   //Get right normal
 
-    //РџРµСЂРµРіСЂСѓР·РєР° РѕРїРµСЂР°С‚РѕСЂРѕРІ
-        //РЎР»РѕР¶РµРЅРёРµ
     Angle& operator+=(Angle& a);
-    Angle& operator+=(double a);
-        //Р’С‹С‡РёС‚Р°РЅРёРµ
+    Angle& operator+=(double rad);
+
     Angle& operator-=(Angle& a);
-    Angle& operator-=(double a);
-        //РџСЂРёСЃРІР°РёРІР°РЅРёРµ
+    Angle& operator-=(double rad);
+
     Angle& operator=(Angle& right);
-    Angle& operator=(double right);
+    Angle& operator=(double rad);
 };
 
-////РЎР»РѕР¶РµРЅРёРµ Рё РІС‹С‡РёС‚Р°РЅРёРµ
 Angle operator+(Angle& left, Angle& right);
 Angle operator-(Angle& left, Angle& right);
 
-////РЎСЂР°РІРЅРµРЅРёРµ
 bool operator==(Angle& left, Angle& right);
 bool operator!=(Angle& left, Angle& right);
-bool operator<(Angle& left, Angle& right);
+bool operator<(Angle& left, Angle& right);  //Checks, if smaller angle between left and right is negative
 bool operator>(Angle& left, Angle& right);
 
 
+//Matrix class
+class Matrix
+{
+private:
+    double** matrix;
+    int h;
+    int w;
+public:
+    Matrix(int h = -1, int w = -1, double** data = nullptr);    //Creating matrix, if h or w = -1 -> matrix is uninitialized
+    ~Matrix();
+    double det();   //Determinant of matrix
+    Matrix getAddition(int _i, int _j);   //Get new matrix by deleting i row and j column
+    Matrix inverse();   //Inverse matrix
+    double GetElem(int i, int j);   //Get element from i row and j column
+    int GetH();
+    int GetW();
+    void SetElem(double x, int i, int j);
+    void clear();
 
+    Matrix& operator=(Matrix& mx);
+    Matrix& operator+=(Matrix& mx);
+    Matrix& operator-=(Matrix& mx);
+    Matrix& operator*=(double coef);
+};
+
+bool operator==(Matrix& left, Matrix& right);
+Matrix operator+(Matrix& left, Matrix& right);
+Matrix operator-(Matrix& left, Matrix& right);
+Matrix operator*(Matrix& left, Matrix& right);
+Matrix operator*(Matrix& left, double right);
 
 #endif // ADD_MATH_H

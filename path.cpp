@@ -1,21 +1,20 @@
 #include "tanks.h"
 extern EntityStack* stack;
 
-std::vector<edge> get_path_from_graph(graph *gr)  //Получение пути из графа
+std::vector<edge> get_path_from_graph(graph *gr, uint _start = 0, uint _end = 1)  //Getting path from graph
 {
-    vertex* start = gr->vertices[0];    //Начало пути
-    vertex* end = gr->vertices[1];  //Конец пути
-    vertex* curr = start;  //Текущая вершина
-    vertex* prev = NULL;   //Предыдущая вершина
+    vertex* start = gr->vertices[_start];
+    vertex* end = gr->vertices[_end];
+    vertex* curr = start;
+    vertex* prev = nullptr;
 
     std::vector<edge> result;
     while (curr != end)
     {
-        for (int i = 0; i < gr->edges.size(); i++)
+        for (uint i = 0; i < gr->edges.size(); i++)
         {
-            //Поиск прилежащих вершин
-            vertex* adj;    //Прилежащая вершина
-            if (gr->edges[i].pA == curr)    //Если грань начинается из текущей вершины
+            vertex* adj;    //Adjacent vertex
+            if (gr->edges[i].pA == curr)
             {
                 adj = gr->edges[i].pB;
             }
@@ -25,12 +24,12 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Получение пути 
             }
             else
                 continue;
-            if (adj == prev)    //Зацикливание
+            if (adj == prev)    //If there is cycle - skip
                 continue;
-            if (gr->edges[i].chosen)    //Если данная грань помечена в графе
+            if (gr->edges[i].chosen)    //If this edge is marked as path
             {
                 edge temp_edge;
-                if (gr->edges[i].type == LINEAR)    //Прямая
+                if (gr->edges[i].type == LINEAR)
                 {
                     temp_edge.A.MoveTo(curr->point->GetX(), curr->point->GetY());
                     temp_edge.B.MoveTo(adj->point->GetX(), adj->point->GetY());
@@ -38,12 +37,12 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Получение пути 
                 }
                 else
                 {
-                    if (gr->edges[i].pA == curr)    //Если грань начинается из текущей вершины
+                    if (gr->edges[i].pA == curr)
                     {
                         temp_edge.aA = gr->edges[i].aA;
                         temp_edge.aB = gr->edges[i].aB;
                     }
-                    else    //Если грань заканчивается в текущей вершине
+                    else
                     {
                         temp_edge.aB = gr->edges[i].aA;
                         temp_edge.aA = gr->edges[i].aB;
@@ -63,30 +62,23 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Получение пути 
     return result;
 }
 
-void Tank::graph_to_path(graph* gr) //Построение пути
+void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical properties
 {
-    //Подготовка к построению пути
-    if (path != NULL)   //Удаление старого пути
+    if (path != nullptr)   //Deleting old path
         delete path;
-    int MAX_POINTS = 600;    //Количество точек - равно кадрам, за которое доедет до цели (10 сек)
-//    double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;    //Запас
+    int MAX_POINTS = 600;    //Max length of path
+    //    double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
     //    double friction = 0.1;
-    double path_x = x;  //Следующая точка пути
+    //Next point of the path
+    double path_x = x;
     double path_y = y;
-    Angle path_angle(degtorad(-angle)); //Целевой угол пути
-    double path_speed = speed;  //Целевая скорость пути
-    //Подготовка переменных графа
-    path = new Path(MAX_POINTS, gr->vertices[1]->point->GetX(), gr->vertices[1]->point->GetY());
+    Angle path_angle(-angle.GetD()); //Target angle at next point
+    double path_speed = speed;  //Target speed at next point
+    path = new Path(MAX_POINTS, gr->vertices[target]->point->GetX(), gr->vertices[target]->point->GetY());
     //Переменные для круговых граней
     Angle start_angle;    //Начальный угол эллиптических граней
     Angle end_angle;  //Конечный угол эллиптических граней
-    double radius;  //? адиус окружности
     Point center = Point(0,0);   //Центр окружности
-    double direction;   //Направление движения: 1 - против часовой стрелки, -1 - по часовой стрелке
-
-    bool on_edge = false;   //Найдена ли линия, по которой будет строиться путь
-    bool final = false; //Данная линия - последняя?
-    bool is_circle; //Является ли текущая грань последней
     //1. Поиск пути в графе
     std::vector<edge> temp_path = get_path_from_graph(gr);
 

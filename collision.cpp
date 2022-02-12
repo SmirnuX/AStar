@@ -1,117 +1,71 @@
-#include "game.h"
+#include "collision.h"
 #include <limits>
 
-Collider::Collider(double o_x, double o_y) : Point (o_x, o_y)
+//=== Collider class realization ===
+
+Collider::Collider(double o_x, double o_y) : Point (o_x, o_y)   //Collider with origin point in (o_x, o_y)
 {
     angle = 0;
     collisions = 0;
 }
 
-void Collider::SetAngle(double angle)
+Collider::~Collider()
 {
-
+    //Empty body
 }
 
-Line::Line(Point p1, Point p2)   //Задание линии от точки p1 до p2.
+void Collider::SetAngle(Angle _angle)
 {
-    min_p = new Point(p1.GetX(), p1.GetY());
-    max_p = new Point(p2.GetX(), p2.GetY());
-    Update();
-}
-
-Line::~Line()
-{
-    delete min_p;
-    delete max_p;
-}
-
-void Line::Update()  //Обновить k, b и проверить min_p и max_p
-{
-    if (max_p->GetX() < min_p->GetX())
-    {
-        Point* temp = min_p;
-        min_p = max_p;
-        max_p = temp;
-    }
-    if (max_p->GetX() == min_p->GetX())
-        k = 10000;  //КОСТЫЛЬ
-    else
-        k = (max_p->GetY() - min_p->GetY())/(max_p->GetX()-min_p->GetX());
-    b = min_p->GetY() - k*min_p->GetX();
-}
-
-void Line::Turn(double angle, Point &pivot) //Поворот линии относительно точки pivot
-{
-    min_p->Turn(angle, pivot);
-    max_p->Turn(angle, pivot);
-    Update();
-}
-
-Circle::Circle(float _x, float _y, float _r)   //Создание окружности
-{
-    center = new Point(_x, _y);
-    r = _r;
-}
-
-Circle::~Circle()
-{
-    delete center;
+    angle = _angle;
 }
 
 
-//====== Реализация PointCollider ======
-
-PointCollider::PointCollider(float _x, float _y) : Collider(_x, _y)
+//=== PointCollider realization ===
+PointCollider::PointCollider(double _x, double _y) : Collider(_x, _y)
 {
-    point = new Point(_x, _y);
+    //Empty body
 }
 
 PointCollider::~PointCollider()
 {
-    delete point;
+    //Empty body
 }
 
-bool PointCollider::CheckCollision(Collider* other)        //Проверка пересечения с неизвестным обьектом
+bool PointCollider::CheckCollision(Collider* other)         //Collision with unknown object
 {
     return other->CheckCollision(this);
 }
 
-bool PointCollider::CheckCollision(PointCollider* other)              //Проверка пересечения с точкой
+bool PointCollider::CheckCollision(PointCollider* other)    //Collision with point
 {
-    if (&(other->point) == &point)
+    if (*this == *other)    //Using Point::operator==
         return true;
     else
         return false;
 }
 
-bool PointCollider::CheckCollision(LineCollider* other)               //Проверка пересечения с линией
+bool PointCollider::CheckCollision(LineCollider* other)     //Collision with line
 {
-    float im_y = point->GetX() * other->line->k + other->line->b;
-    if (almostEq(im_y, point->GetY()))
-        return true;
-    else
-        return false;
+    return almostEq(other->line->a*x + other->line->b*y + other->line->c, 0) &&
+           other->line->GetMinX() < x && x < other->line->GetMaxX();
 }
 
-bool PointCollider::CheckCollision(CircleCollider* other)     //Проверка пересечения с кругом
+bool PointCollider::CheckCollision(CircleCollider* other)   //Collision with circle
 {
-    double dx = point->GetX() - other->circle->center->GetX();
-    double dy = point->GetY() - other->circle->center->GetY();
-    double distance = dx * dx + dy * dy;                        //Расстояние от точки до центра
-    return (distance < (other->circle->r * other->circle->r));
+    return (distance(x, y, other->GetX(), other->GetY()) < (other->circle->GetR() * other->circle->GetR()));
 }
 
-bool PointCollider::CheckCollision(PolygonCollider* other)            //Проверка пересечения с многоугольником
+bool PointCollider::CheckCollision(PolygonCollider* other)  //Collision with polygon
 {
-    //Пускаем луч из точки параллельно оси x. Если по пути четное пересечение границ - значит, снаружи. Иначе - внутри.
-    double x_ray = point->GetX();   //Начало луча (минимальная точка)
-    double y_ray = point->GetY();   //Высота луча
+    //Casting ray from point to left. If intersection with polygon edge is even
+    double x_ray = GetX();   //Starting point of ray
+    double y_ray = GetY();   //Height of ray
 
-    Point* curr;    //Первая точка рассматриваемого отрезка
-    Point* next;    //Вторая точка рассматриваемого отрезка
-    bool inside = false;    //Изначально считаем, что точка снаружи
+    Point* curr;    //First point of segment
+    Point* next;    //Second point of segment
+    bool inside = false;    //Presuming, that point is outside
 
-    for(int i=0; i < other->count; i++)
+    for(int i = 0; i < other->count; i++)
     {
         curr = other->points[i];
         if (i < other->count - 1)
@@ -119,102 +73,81 @@ bool PointCollider::CheckCollision(PolygonCollider* other)            //Пров
         else
             next = other->points[0];
 
-        if (almostEq(y_ray, curr->GetY()))  //первая точка на луче (или позади него)
+        if (almostEq(y_ray, curr->GetY()))  //first point is on ray
         {
-            if (almostEq(y_ray, next->GetY()))  //вторая точка тоже на луче - отрезок параллелен лучу
+            if (almostEq(y_ray, next->GetY()))  //second is too - segment is parallel to ray
             {
-                if (almostEq(x_ray, curr->GetX()))  //первая точка совпадает с началома луча
+                if (almostEq(x_ray, curr->GetX()))  //first point is in start of ray
                     return true;
-                if ( (x_ray < curr->GetX()) != (x_ray < next->GetX()) ) //Если точки отрезка находятся по разные стороны от точки
+                if ( (x_ray < curr->GetX()) != (x_ray < next->GetX()) ) //points of segment are on different size of ray start
                     return true;
-                //ИНАЧЕ - не учитываем эту грань как пересечение. НО - пересечение должно быть рассмотрено в следующей точке
+                //ELSE - dont count as intersection, but it should be counted on next iteration
             }
-            else //вторая точка над или под лучом
+            else //second point is not on the ray
             {
-                if (almostEq(x_ray, curr->GetX()))  //первая точка совпадает с точкой
+                if (almostEq(x_ray, curr->GetX()))  //first point is on start of ray
                     return true;
-                if (x_ray < curr->GetX())   //первая точка находится на луче
+                if (x_ray < curr->GetX())   //first point is on ray
                     inside = !inside;
-                //ИНАЧЕ - первая точка позади луча, пересечений нет
+                //ELSE - there is no intersection
             }
         }
-        else if (y_ray < curr->GetY())  //Луч находится над первой точкой
+        else if (y_ray < curr->GetY())  //Ray is below first point
         {
-            if (almostEq(y_ray, next->GetY()))  //Вторая точка находится на/за лучем
+            if (almostEq(y_ray, next->GetY()))  //Second point is on ray
             {
-                if (almostEq(x_ray, next->GetX()))   //Если вторая точка совпадает с точкой
+                if (almostEq(x_ray, next->GetX()))   //Second point is on start ray
                     return true;
-                if (x_ray < next->GetX()) //Если вторая точка лежит на луче
+                if (x_ray < next->GetX()) //Second point is on ray
                     inside = !inside;
-                //ИНАЧЕ - Если вторая точка за лучом - пересечений нет
+                //ELSE - there is no intersection
             }
-            else if (y_ray > next->GetY())  //Отрезок пересекает луч снизу вверх. Определяем, слева ли точка
+            else if (y_ray > next->GetY())  //Segment is crossing ray
             {
-                double inverse_k = (next->GetX() - curr->GetX()) / (next->GetY() - curr->GetY());   //Представим отрезок в качестве уравнения x = ky + b
+                double inverse_k = (next->GetX() - curr->GetX()) / (next->GetY() - curr->GetY());
                 double inverse_b = next->GetX() - inverse_k * next->GetY();
-                double intersec_x = inverse_k * y_ray + inverse_b;  //Точка пересечения луча и отрезка
+                double intersec_x = inverse_k * y_ray + inverse_b;
                 if (x_ray < intersec_x)
                     inside = !inside;
             }
-            //ИНАЧЕ - Отрезок находится под лучом, пересечений нет
+            //ELSE - segment is below ray, there is no intersection
         }
-        else    //Луч находится под первой точкой. Полностью повторяет верхний блок. TODO - проверить, не избыточен ли код
+        else    //Ray is above first point. Almost same, as previous case
         {
-            if (almostEq(y_ray, next->GetY()))  //Вторая точка находится на/за лучем
+            if (almostEq(y_ray, next->GetY()))
             {
-                if (almostEq(x_ray, next->GetX()))   //Если вторая точка совпадает с точкой
+                if (almostEq(x_ray, next->GetX()))
                     return true;
-                if (x_ray < next->GetX()) //Если вторая точка лежит на луче
+                if (x_ray < next->GetX())
                     inside = !inside;
-                //ИНАЧЕ - Если вторая точка за лучом - пересечений нет
             }
-            else if (y_ray < next->GetY())  //Отрезок пересекает луч снизу вверх. Определяем, слева ли точка
+            else if (y_ray < next->GetY())
             {
-                double inverse_k = (next->GetX() - curr->GetX()) / (next->GetY() - curr->GetY());   //Представим отрезок в качестве уравнения x = ky + b
+                double inverse_k = (next->GetX() - curr->GetX()) / (next->GetY() - curr->GetY());
                 double inverse_b = next->GetX() - inverse_k * next->GetY();
-                double intersec_x = inverse_k * y_ray + inverse_b;  //Точка пересечения луча и отрезка
+                double intersec_x = inverse_k * y_ray + inverse_b;
                 if (x_ray < intersec_x)
                     inside = !inside;
             }
-            //ИНАЧЕ - Отрезок находится под лучом, пересечений нет
         }
 
     }
     return inside;
 }
 
-void PointCollider::ShowCollider()  //Отрисовка коллайдера
+void PointCollider::ShowCollider()  //Drawing collider
 {
     QPainter painter(picture);
     if (collisions > 0)
         painter.setPen(QColor(0,255,0));
     else
         painter.setPen(QColor(255,0,0));
-    painter.drawPoint(point->GetX(), point->GetY());
+    painter.drawPoint(GetX(), GetY());
 }
 
-void PointCollider::MoveTo(float _x, float _y)  //Передвинуть в указанную позицию
-{
-    point->MoveTo(_x, _y);
-}
 
-void PointCollider::Drag(float dx, float dy)  //Передвинуть на dx пикселей по горизонтали и на dy по вертикали
-{
-    point->Drag(dx, dy);
-}
-
-void PointCollider::Turn(double angle, Point& pivot)    //Повернуть точку относительно точки pivot
-{
-    point->Turn(angle, pivot);
-}
-
-void PointCollider::Turn(double angle)    //Поворот относительно центра - точка просто остается на месте
-{
-
-}
-
-//====== Реализация LineCollider ======
-LineCollider::LineCollider(float x1, float y1, float x2, float y2):Collider(x1 ,y1)
+//=== LineCollider realization ===
+LineCollider::LineCollider(double x1, double y1, double x2, double y2):Collider(x1 ,y1)
 {
     line = new Line(Point(x1, y1), Point(x2, y2));
 }
@@ -224,163 +157,126 @@ LineCollider::~LineCollider()
     delete line;
 }
 
-bool LineCollider::CheckCollision(Collider* other)           //Проверка пересечения с неизвестным обьектом
+bool LineCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
     return other->CheckCollision(this);
 }
 
-bool LineCollider::CheckCollision(PointCollider* other)      //Проверка пересечения с точкой
+bool LineCollider::CheckCollision(PointCollider* other)      //Collision with point [ALREADY IMPLEMENTED]
 {
     return other->CheckCollision(this);
 }
 
-bool LineCollider::CheckCollision(LineCollider* other)       //Проверка пересечения с линией
+bool LineCollider::CheckCollision(LineCollider* other)       //Collision with line
 {
-    if (almostEq(other->line->max_p->GetX(), other->line->min_p->GetX()))   //КОСТЫЛЬ для вертикальных линий
+    //Solution of system of linear equations : X = A^(-1)xB
+    Matrix A(2, 2);
+    A.SetElem(line->a, 0, 0);
+    A.SetElem(line->b, 0, 1);
+    A.SetElem(other->line->a, 1, 0);
+    A.SetElem(other->line->b, 1, 1);
+    //Checking determinant
+    double _Det = A.det();
+    if (almostEq(_Det, 0))
     {
-        if (almostEq(line->min_p->GetX(), line->max_p->GetX())) //Две вертикальные линии
-            return almostEq(line->min_p->GetX(), other->line->min_p->GetX());
-        double quer_y = line->k * other->line->max_p->GetX() + line->b;
-        if (line->min_p->GetX() < other->line->min_p->GetX() && other->line->min_p->GetX() < line->max_p->GetX())
-            return ( (other->line->min_p->GetY() < quer_y && quer_y < other->line->max_p->GetY()) || (other->line->max_p->GetY() < quer_y && quer_y < other->line->min_p->GetY()) );
-        else
-            return false;
+        return almostEq(line->c, other->line->c) && intersect(line->GetMinX(), line->GetMaxX(),
+                                                              other->line->GetMinX(), other->line->GetMaxX());   //Parallel or equal
     }
-    if (almostEq(line->max_p->GetX(), line->min_p->GetX())) //КОСТЫЛЬ для первой линии
-        return other-> CheckCollision(this);
-
-    if (other->line->max_p->GetX() < line->min_p->GetX() || other->line->min_p->GetX() > line->max_p->GetX())
-        return false;   //Отрезки не пересекаются в принципе
-
-    if (almostEq(other->line->k, line->k))  //Линии параллельны
-    {
-        if (almostEq(other->line->b, line->b))  //Прямые совпадают
-            return true;
-        else
-            return false;   //отрезки параллельны
-    }
-    double quer_x = (line->b - other->line->b) / (other->line->k - line->k);    //Точка пересечения прямых
-    //qDebug()<<"QUER X" << quer_x;
-    if (line->min_p->GetX() > quer_x || line->max_p->GetX() < quer_x)
-        return false;
-    if (other->line->min_p->GetX() > quer_x || other->line->max_p->GetX() < quer_x)
-        return false;
-    //double min_x = (line->min_p->GetX() < other->line->min_p->GetX())?line->min_p->GetX():other->line->min_p->GetX();
-    //double max_x = (line->max_p->GetX() > other->line->max_p->GetX())?line->max_p->GetX():other->line->max_p->GetX();
-
-    //if (min_x < quer_x && quer_x < max_x)
-        //return true;
-    //else
-        return false;
-
+    Matrix C(2, 1);
+    C.SetElem(-line->c, 0, 0);
+    C.SetElem(-other->line->c, 1, 0);
+    Matrix A_inv = A.inverse();
+    Matrix res = A_inv * C;
+    double res_x = res.GetElem(0, 0);
+    double res_y = res.GetElem(0, 1);
+    return (line->GetMinX() < res_x && res_x < line->GetMaxX() &&
+            line->GetMinY() < res_y && res_y < line->GetMaxY());
 }
 
-bool LineCollider::CheckCollision(CircleCollider* other)     //Проверка пересечения с кругом
+bool LineCollider::CheckCollision(CircleCollider* other)     //Collision with circle
 {
-    //Находим ближайшую точку прямой к центру круга
-    double normal_k;
-    double near_x, near_y;  //Координаты ближайшей точки
-    if (!almostEq(line->k, 0))
-        normal_k = -1/line->k;   //Коэффициент в уравнении прямой для нормали
-    else
-        normal_k = 10000;  //ПОДГОООН
-    double normal_b = other->circle->center->GetY() - normal_k * other->circle->center->GetX();
-
-    //Находим пересечение нормали из центра круга и линии
-    double quer_x = (line->b - normal_b) / (normal_k - line->k);    //Точка пересечения прямых
-    if (almostEq(line->min_p->GetX(), line->max_p->GetX())) //КОСТЫЛЬ для вертикальных линий
+    //Search for nearest point on line to circle
+    double normal_a, normal_b;
+    normal_a = - line->b;
+    normal_b = line->a;
+    //Finding C for equation of normal
+    double normal_c = -(normal_a * other->GetX() + normal_b * other->GetY());
+    //Finding intersection of normal and line
+    Point* nearest_pt = intersect2d(normal_a, normal_b, normal_c,
+                               line->a, line->b, line->c);
+    if (nearest_pt == nullptr)
     {
-        near_x = line->min_p->GetX();
-        near_y = other->circle->center->GetY();
-        if ( (line->min_p->GetY() > near_y || line->max_p->GetY() < near_y) && (line->max_p->GetY() > near_y || line->min_p->GetY() < near_y) )
-            return false;
+        throw std::runtime_error("Unexpected error. Somehow line and its normal do not intersect");
     }
-    else if (quer_x >= line->min_p->GetX() && quer_x <= line->max_p->GetX()) //Если нормаль пересекает прямую
-    {
-        near_x = quer_x;
-        near_y = normal_k * quer_x + normal_b;
-    }
-    else if (quer_x > line->max_p->GetX())
-    {
-        near_x = line->max_p->GetX();
-        near_y = line->max_p->GetY();
-    }
-    else
-    {
-        near_x = line->min_p->GetX();
-        near_y = line->min_p->GetY();
-    }
-    double distance = (near_y - other->circle->center->GetY()) * (near_y - other->circle->center->GetY()) + (near_x - other->circle->center->GetX()) * (near_x - other->circle->center->GetX());  //Расстояние от центра круга до ближайшей точки линии
-    return (distance < other->circle->r * other->circle->r);
+    double dist = distance2(nearest_pt->GetX(), nearest_pt->GetY(), other->GetX(), other->GetY());
+    return (dist < other->circle->GetR() * other->circle->GetR());
 }
 
-bool LineCollider::CheckCollision(PolygonCollider* other)            //Проверка пересечения с многоугольником
+bool LineCollider::CheckCollision(PolygonCollider* other)            //Collision with polygon
 {
-    Point* curr;    //Первая точка рассматриваемого отрезка
-    Point* next;    //Вторая точка рассматриваемого отрезка
+    Point* curr;    //First point of segment
+    Point* next;    //Second point of segment
     LineCollider line_c(0,0,1,1);
 
-    for(int i=0; i < other->count; i++)   //Проверка пересечения с линиями
+    for(int i=0; i < other->count; i++)   //Checking every intersection
     {
         curr = other->points[i];
         if (i < other->count-1)
             next = other->points[i+1];
         else
             next = other->points[0];
-        line_c.line->min_p->MoveTo(curr->GetX(), curr->GetY());
-        line_c.line->max_p->MoveTo(next->GetX(), next->GetY());
-        line_c.line->Update();
+        line_c.line->Set(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
         if (line_c.CheckCollision(this))
             return true;
     }
-    PointCollider point_c(line->min_p->GetX(), line->min_p->GetY());
-    return point_c.CheckCollision(other);    //Проверяем, входит ли отрезок в многоугольник полностью
+    PointCollider point_c(line->GetMinX(), line->GetMinY());
+    return point_c.CheckCollision(other);    //Checking, if whole line is in segment
 }
 
-void LineCollider::ShowCollider()                            //Отрисовка коллайдера
+void LineCollider::ShowCollider()
 {
     QPainter painter(picture);
     if (collisions > 0)
         painter.setPen(QColor(0,255,0));
     else
         painter.setPen(QColor(255,0,0));
-    painter.drawLine(line->min_p->GetX(), line->min_p->GetY(), line->max_p->GetX(), line->max_p->GetY());
+    painter.drawLine(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
     collisions = 0;
 }
 
-void LineCollider::MoveTo(float _x, float _y)  //Передвинуть в указанную позицию - при этом передвигается первая точка линии, вторая двигается за ней
+void LineCollider::MoveTo(double _x, double _y)   //Move first point to (_x, _y) - second point will follow
 {
-    double dx = line->max_p->GetX() - line->min_p->GetX();
-    double dy = line->max_p->GetY() - line->min_p->GetY();
-    line->min_p->MoveTo(_x, _y);
-    line->max_p->MoveTo(_x + dx, _y + dy);
+    double dx = line->GetMinX() - line->GetMaxX();
+    double dy = line->GetMinY() - line->GetMaxY();
+    line->Set(_x, _y, _x + dx, _y + dy);
 }
 
-void LineCollider::Drag(float dx, float dy)  //Передвинуть на dx пикселей по горизонтали и на dy по вертикали
+void LineCollider::Drag(double dx, double dy)
 {
-    line->min_p->Drag(dx, dy);
-    line->max_p->Drag(dx, dy);
+    line->Set(line->GetMinX() + dx, line->GetMinY() + dy, line->GetMaxX() + dx, line->GetMaxY() + dy);
 }
 
-void LineCollider::Turn(double angle, Point& pivot)    //Повернуть линию относительно pivot
+void LineCollider::Turn(Angle angle, Point& pivot)
 {
     line->Turn(angle, pivot);
 }
 
-void LineCollider::Turn(double angle)    //Поворот относительно первой точки
+void LineCollider::Turn(Angle angle) //Rotate relative to left point
 {
-    line->Turn(angle, *line->min_p);
+    Point pivot(line->GetMinX(), line->GetMinY());
+    line->Turn(angle, pivot);
 }
 
-void LineCollider::SetAngle(double angle)   //Установка угла относительно первой точки
+void LineCollider::SetAngle(Angle angle)
 {
-    double length = sqrt((line->max_p->GetY() - line->min_p->GetY()) * (line->max_p->GetY() - line->min_p->GetY()) + (line->max_p->GetX() - line->min_p->GetX()) * (line->max_p->GetX() - line->min_p->GetX()));
-    line->max_p->MoveTo(line->min_p->GetX() + cos(angle) * length, line->min_p->GetY() - sin(angle) * length);
-    line->Update();
+    double length = distance(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
+    line->Set(line->GetMinX(), line->GetMinY(),
+              line->GetMinX() + length * cos(angle.GetR()), line->GetMinY() + length * sin(angle.GetR()));
 }
 
 
-CircleCollider::CircleCollider(float _x, float _y, float _r) : Collider(_x, _y)
+//=== CircleCollider class realization ===
+CircleCollider::CircleCollider(double _x, double _y, double _r) : Collider(_x, _y)
 {
     circle = new Circle(_x ,_y, _r);
 }
@@ -390,40 +286,38 @@ CircleCollider::~CircleCollider()
     delete circle;
 }
 
-bool CircleCollider::CheckCollision(Collider* other)           //Проверка пересечения с неизвестным обьектом
+bool CircleCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
     return other->CheckCollision(this);
 }
 
-bool CircleCollider::CheckCollision(PointCollider* other)      //Проверка пересечения с точкой
+bool CircleCollider::CheckCollision(PointCollider* other)      //Collision with point
 {
     return other->CheckCollision(this);
 }
 
-bool CircleCollider::CheckCollision(LineCollider* other)       //Проверка пересечения с линией
+bool CircleCollider::CheckCollision(LineCollider* other)       //Collision with line
 {
     return other->CheckCollision(this);
 }
 
-bool CircleCollider::CheckCollision(CircleCollider* other)    //Проверка пересечения с кругом
+bool CircleCollider::CheckCollision(CircleCollider* other)    //Collision with circle
 {
-    double dx = (circle->center->GetX() - other->circle->center->GetX());
-    double dy = (circle->center->GetY() - other->circle->center->GetY());
-    double distance = dx*dx + dy*dy;
-    return (distance < (circle->r + other->circle->r)*(circle->r + other->circle->r));
+    double dist = distance2(GetX(), GetY(), other->GetX(), other->GetY());
+    return (dist < (circle->GetR() + other->circle->GetR())*(circle->GetR() + other->circle->GetR()));
 }
 
-bool CircleCollider::CheckCollision(PolygonCollider* other)            //Проверка пересечения с многоугольником
+bool CircleCollider::CheckCollision(PolygonCollider* other)            //Collision with polygon
 {
-    //Входит ли центр круга в многоугольник
-    PointCollider point_c(circle->center->GetX(), circle->center->GetY());
-    if(point_c.CheckCollision(other))    //Проверяем, входит ли отрезок в многоугольник полностью
+    //Is center of circle inside of polygon
+    PointCollider point_c(circle->GetX(), circle->GetY());
+    if(point_c.CheckCollision(other))
         return true;
 
-    //Проверяем, пересекаются ли стороны многоугольника с кругом
+    //Are sides of polygon intersecting with circle
     LineCollider line_c(0,0,1,1);
-    Point* curr;    //Первая точка рассматриваемого отрезка
-    Point* next;    //Вторая точка рассматриваемого отрезка
+    Point* curr;
+    Point* next;
 
     for(int i=0; i < other->count; i++)
     {
@@ -432,9 +326,7 @@ bool CircleCollider::CheckCollision(PolygonCollider* other)            //Про�
             next = other->points[i+1];
         else
             next = other->points[0];
-        line_c.line->min_p->MoveTo(curr->GetX(), curr->GetY());
-        line_c.line->max_p->MoveTo(next->GetX(), next->GetY());
-        line_c.line->Update();
+        line_c.line->Set(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
         if (line_c.CheckCollision(this))
             return true;
     }
@@ -448,30 +340,12 @@ void CircleCollider::ShowCollider()
         painter.setPen(QColor(0,255,0));
     else
         painter.setPen(QColor(255,0,0));
-    painter.drawEllipse(circle->center->GetX() - circle->r, circle->center->GetY() - circle->r, 2 * circle->r, 2 * circle->r);
+    painter.drawEllipse(circle->GetX() - circle->GetR(), circle->GetY() - circle->GetR(), 2 * circle->GetR(), 2 * circle->GetR());
     collisions = 0;
 }
 
-void CircleCollider::MoveTo(float _x, float _y) //Передвинуть центр в указанную позицию
-{
-    circle->center->MoveTo(_x,_y);
-}
 
-void CircleCollider::Drag(float dx, float dy)  //Передвинуть центр на dx пикселей по горизонтали и на dy по вертикали
-{
-    circle->center->Drag(dx, dy);
-}
-
-void CircleCollider::Turn(double angle, Point& pivot)   //Повернуть круг вокруг pivot
-{
-    circle->center->Turn(angle, pivot);
-}
-
-void CircleCollider::Turn(double angle)    //Поворот относительно центра - круг просто остается на месте
-{
-
-}
-
+//=== PolygonCollider class realization ===
 PolygonCollider::PolygonCollider(double* x_s, double* y_s, int num, double orig_x = 0, double orig_y = 0) : Collider(orig_x, orig_y)
 {
     points = new Point*[num];
@@ -491,41 +365,44 @@ PolygonCollider::~PolygonCollider()
     delete[](points);
 }
 
-bool PolygonCollider::CheckCollision(Collider* other)           //Проверка пересечения с неизвестным обьектом
+bool PolygonCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
     return other->CheckCollision(this);
 }
 
-bool PolygonCollider::CheckCollision(PointCollider* other)      //Проверка пересечения с точкой
+bool PolygonCollider::CheckCollision(PointCollider* other)      //Collision with point
 {
     return other->CheckCollision(this);
 }
 
-bool PolygonCollider::CheckCollision(LineCollider* other)       //Проверка пересечения с линией
+bool PolygonCollider::CheckCollision(LineCollider* other)       //Collision with line
 {
     return other->CheckCollision(this);
 }
 
-bool PolygonCollider::CheckCollision(CircleCollider* other)     //Проверка пересечения с кругом
+bool PolygonCollider::CheckCollision(CircleCollider* other)     //Collision with circle
 {
     return other->CheckCollision(this);
 }
 
-bool PolygonCollider::CheckCollision(PolygonCollider* other)            //Проверка пересечения с многоугольником
+bool PolygonCollider::CheckCollision(PolygonCollider* other)            //Collision with polygon
 {
-    //TODO - оптимизировать
-    //Первичная проверка всех верщин
-    PointCollider point_c(0,0);
+    PointCollider point_c(0,0); //Checking, if any of vertices are inside other polygon
     for(int i=0; i < count; i++)
     {
-        point_c.point->MoveTo(points[i]->GetX(), points[i]->GetY());
+        point_c.MoveTo(points[i]->GetX(), points[i]->GetY());
         if (point_c.CheckCollision(other))
         {
-            qDebug() << "Inside of rectangle";
             return true;
         }
     }
-    //Проверка всех сторон со всеми
+    //Checking, if other polygon is inside of this
+    point_c.MoveTo(other->points[0]->GetX(), other->points[0]->GetY());
+    if (point_c.CheckCollision(this))
+    {
+        return true;
+    }
+    //Checking all sides
     Point* curr, *next;
     LineCollider line_c(0,0,1,1);
     for(int i=0; i < count; i++)
@@ -535,9 +412,7 @@ bool PolygonCollider::CheckCollision(PolygonCollider* other)            //Про
             next = points[i+1];
         else
             next = points[0];
-        line_c.line->min_p->MoveTo(curr->GetX(), curr->GetY());
-        line_c.line->max_p->MoveTo(next->GetX(), next->GetY());
-        line_c.line->Update();
+        line_c.line->Set(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
         if (line_c.CheckCollision(other))
             return true;
     }
@@ -564,7 +439,7 @@ void PolygonCollider::ShowCollider()
     collisions = 0;
 }
 
-void PolygonCollider::MoveTo(float _x, float _y)  //Передвинуть центр в указанную позицию
+void PolygonCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
 {
     Point::MoveTo(_x, _y);
     for(int i=0; i < count; i++)
@@ -573,7 +448,7 @@ void PolygonCollider::MoveTo(float _x, float _y)  //Передвинуть це�
     }
 }
 
-void PolygonCollider::Drag(float dx, float dy)  //Передвинуть центр на dx пикселей по горизонтали и на dy по вертикали
+void PolygonCollider::Drag(double dx, double dy)
 {
     Point::Drag(dx, dy);
     for(int i=0; i < count; i++)
@@ -582,7 +457,7 @@ void PolygonCollider::Drag(float dx, float dy)  //Передвинуть цен�
     }
 }
 
-void PolygonCollider::Turn(double angle, Point& pivot)    //Повернуть круг вокруг pivot
+void PolygonCollider::Turn(Angle angle, Point& pivot)
 {
     for(int i=0; i < count; i++)
     {
@@ -590,7 +465,7 @@ void PolygonCollider::Turn(double angle, Point& pivot)    //Повернуть �
     }
 }
 
-void PolygonCollider::Turn(double angle)    //Поворот относительно центра - круг просто остается на месте
+void PolygonCollider::Turn(Angle angle)
 {
     Point a(x, y);
     for(int i=0; i < count; i++)
@@ -599,13 +474,13 @@ void PolygonCollider::Turn(double angle)    //Поворот относител�
     }
 }
 
-void PolygonCollider::SetAngle(double angle)
+void PolygonCollider::SetAngle(Angle angle)
 {
     Point a(x, y);
     for(int i=0; i < count; i++)
     {
         points[i]->MoveTo(orig_points[i]->GetX() + x, orig_points[i]->GetY() + y);
-        points[i]->Turn(degtorad(angle), a);
+        points[i]->Turn(angle, a);
     }
 }
 

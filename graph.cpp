@@ -1,253 +1,96 @@
 #include "game.h"
 
-double safe_acos(double ang)
+//=== Comparing of two vertices - for std::priority_queue ===
+graph_cmp::graph_cmp(vertex* _ptr)
 {
-    if (ang > 1)
-        ang = 0.999;
-    if (ang < -1)
-        ang = -0.999;
-    double res = acos(ang);
-    if (res < 0)
-        res += 2 * M_PI;
-    if (res > 2*M_PI)
-        res -= 2*M_PI;
-    return res;
+    ptr = _ptr;
 }
 
-double safe_asin(double ang)
+graph_cmp::graph_cmp()
 {
-    if (ang > 1)
-        ang = 0.999;
-    if (ang < -1)
-        ang = -0.999;
-    double res = asin(ang);
-    if (res < 0)
-        res += 2 * M_PI;
-    if (res > 2*M_PI)
-        res -= 2*M_PI;
-    return res;
+    ptr = nullptr;
 }
 
-vertex* add_vert(double x, double y, obstacle* _parent, double _angle)    //Создание вершины
+bool fnctor::operator() (graph_cmp const& lhs, graph_cmp const& rhs)   //Priority comparing
+{
+    return lhs.ptr->cost > rhs.ptr->cost;
+}
+
+
+//=== Graph class realization ===
+graph::graph()
+{
+    found_way = false;
+}
+
+bool graph::IsWay()
+{
+    return found_way;
+}
+
+void graph::clear()
+{
+    for (unsigned int i=0; i < vertices.size(); i++)
+        delete vertices[i];
+}
+
+graph::~graph()
+{
+    clear();
+}
+
+vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle)    //Vertex creation
 {
     vertex* res = new vertex;
     res->point = new Point(x, y);
     res->parent = _parent;
     res->angle = _angle;
-    if (res->angle < 0)
-        res->angle += 2 * M_PI;
-    if (res->angle > 2*M_PI)
-        res->angle -= 2*M_PI;
     return res;
 }
 
-vertex* add_vert(Point* pt, obstacle* _parent, double _angle)    //Создание вершины
+vertex* add_vert(Point* pt, obstacle* _parent, double _angle)    //Vertex creation
 {
     vertex* res = new vertex;
     res->point = new Point(pt->GetX(), pt->GetY());
     res->parent = _parent;
     res->angle = _angle;
-    if (res->angle < 0)
-        res->angle += 2 * M_PI;
-    if (res->angle > 2*M_PI)
-        res->angle -= 2*M_PI;
     return res;
 }
 
-graph* build_graph(obstacle* objects, int count) //Построение графа
+graph* build_graph(obstacle* objects, int count) //Building graph
 {
-    graph* result = new graph(); //Граф
-    for (int i = 0; i < count; i++)
+    graph* result = new graph();
+    for (int i = 0; i < count; i++) //Getting all connections between all obstacles
     {
         for (int j = i+1; j < count; j++)
         {
             obstacle* A = objects + i;
             obstacle* B = objects + j;
 
-            int temp_count = 0;
             struct edge temp_edges[MAX_TEMP_EDGES];
-            int temp_vert_count = 0;
             struct vertex* temp_verts[MAX_TEMP_VERTS];
-
-            if (A->shape == POINT && B->shape == POINT) //Точка-точка
+            struct temp_edges temp_count;
+            if (A->shape == POINT && B->shape == POINT) //Point-Point - only one line
             {
-                //Временные вершины
-                temp_vert_count = 2;
-                temp_verts[0] = add_vert(A->point, A);
-                temp_verts[1] = add_vert(B->point, B);
-
-                struct vertex* path_verts[2];   //Начальные и конечные точки
-                path_verts[0] = add_vert(A->point, A);
-                path_verts[1] = add_vert(B->point, B);
-
-                //Временная линия
-                temp_count = 1;
-                edge line;
-                line.chosen = false;
-                line.passed = false;
-                line.type = LINEAR;
-                line.pA = temp_verts[0];
-                line.pB = temp_verts[1];
-                line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                temp_edges[0] = line;
-
-                result->vertices.push_back(path_verts[0]);
-                result->vertices.push_back(path_verts[1]);
-
-                //continue;
+                temp_count = get_edges_point_to_point(temp_verts, temp_edges, A, B);
             }
-            else if (A->shape == CIRCLE && B->shape == CIRCLE)  //Круг-круг
+            else if (A->shape == CIRCLE && B->shape == CIRCLE)  //Circle-Circle - 0, 2 or 4 lines
             {
-                //Дистанция между центрами
-                double dist2 = distance2(*(A->point), *(B->point));
-                double dist = sqrt(dist2);
-                if (dist < fabs(A->rA - B->rA)) //Один круг содержит в себе другой
-                {
-                    temp_vert_count = 0;
-                    temp_count = 0;
-                    continue;   //Не добавляются дуги
-                }
-                else
-                {
-                    temp_vert_count = 4;
-                    temp_count = 2;
-
-                    //Поиск необходимого угла
-                    double angle = safe_acos((B->point->GetX() - A->point->GetX())/dist);
-                    if ((B->point->GetY() - A->point->GetY()) < 0)
-                        angle = 2*M_PI - angle;
-                    double outer_angle = 2 * safe_acos(-fabs(A->rA - B->rA) / dist);  //Угол между внешними касательными
-
-                    //Добавление вершин
-                    temp_verts[0] = add_vert(A->point->GetX() + A->rA * cos(angle+outer_angle/2),
-                                             A->point->GetY() + A->rA * sin(angle+outer_angle/2),
-                                             A, angle+outer_angle/2);
-                    temp_verts[1] = add_vert(B->point->GetX() + B->rA * cos(angle+outer_angle/2),
-                                             B->point->GetY() + B->rA * sin(angle+outer_angle/2),
-                                             B, angle+outer_angle/2);
-
-                    temp_verts[2] = add_vert(A->point->GetX() + A->rA * cos(angle-outer_angle/2),
-                                             A->point->GetY() + A->rA * sin(angle-outer_angle/2),
-                                             A, angle-outer_angle/2);
-                    temp_verts[3] = add_vert(B->point->GetX() + B->rA * cos(angle-outer_angle/2),
-                                             B->point->GetY() + B->rA * sin(angle-outer_angle/2),
-                                             B, angle-outer_angle/2);
-
-                    //Добавление граней
-                    edge line;
-                    line.chosen = false;
-                    line.passed = false;
-                    line.type = LINEAR;
-                    line.pA = temp_verts[0];
-                    line.pB = temp_verts[1];
-                    line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                    temp_edges[0] = line;
-                    line.pA = temp_verts[2];
-                    line.pB = temp_verts[3];
-                    line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                    temp_edges[1] = line;
-
-                    if (dist > (A->rA + B->rA)) //Окружности не пересекаются
-                    {
-
-                        temp_vert_count = 8;
-                        temp_count = 4;
-
-                        //Поиск необходимого угла
-                        //double angle = atan((B->point->GetY() - A->point->GetY())/(B->point->GetX() - A->point->GetX()));
-                        //double angle = acos((B->point->GetX() - A->point->GetX())/dist);
-                        double inner_angle = safe_acos((A->rA + B->rA) / dist);  //Угол между внешними касательными
-
-                        //Добавление вершин
-                        temp_verts[4] = add_vert(A->point->GetX() + A->rA * cos(angle+inner_angle),
-                                                 A->point->GetY() + A->rA * sin(angle+inner_angle),
-                                                 A, angle+inner_angle);
-                        temp_verts[5] = add_vert(B->point->GetX() + B->rA * cos(M_PI+angle+inner_angle),
-                                                 B->point->GetY() + B->rA * sin(M_PI+angle+inner_angle),
-                                                 B, M_PI+angle+inner_angle);
-
-                        temp_verts[6] = add_vert(A->point->GetX() + A->rA * cos(angle-inner_angle),
-                                                 A->point->GetY() + A->rA * sin(angle-inner_angle),
-                                                 A, angle-inner_angle);
-                        temp_verts[7] = add_vert(B->point->GetX() + B->rA * cos(M_PI+angle-inner_angle),
-                                                 B->point->GetY() + B->rA * sin(M_PI+angle-inner_angle),
-                                                 B, M_PI+angle-inner_angle);
-
-                        //Добавление граней
-                        edge line;
-                        line.chosen = false;
-                        line.passed = false;
-                        line.type = LINEAR;
-                        line.pA = temp_verts[4];
-                        line.pB = temp_verts[5];
-                        line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                        temp_edges[2] = line;
-                        line.pA = temp_verts[6];
-                        line.pB = temp_verts[7];
-                        line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                        temp_edges[3] = line;
-                    }
-
-                }
+                temp_count = get_edges_circle_to_circle(temp_verts, temp_edges, A, B);
             }
-            else    //Точка-круг (и наоборот)
+            else    //Point-Circle
             {
-                double dist = sqrt(distance2(*(A->point), *(B->point)));
-                obstacle* pt;
-                obstacle* circle;
-                if (A->shape == CIRCLE)
-                {
-                    circle = A;
-                    pt = B;
-                }
-                else
-                {
-                    circle = B;
-                    pt = A;
-                }
-                temp_vert_count = 4;
-                temp_count = 2;
-
-                //Поиск необходимого угла
-                double angle = safe_acos((circle->point->GetX() - pt->point->GetX())/dist);
-                if ((circle->point->GetY() - pt->point->GetY()) < 0)
-                    angle = 2*M_PI - angle;
-                double outer_angle = 2 * safe_acos(circle->rA / dist);  //Угол между внешними касательными
-
-                //Добавление вершин
-                temp_verts[0] = add_vert(pt->point->GetX(),
-                                         pt->point->GetY(), pt);
-                temp_verts[1] = add_vert(pt->point->GetX(),
-                                         pt->point->GetY(), pt);
-                temp_verts[2] = add_vert(circle->point->GetX() + circle->rA * cos(M_PI+angle-outer_angle/2),
-                                         circle->point->GetY() + circle->rA * sin(M_PI+angle-outer_angle/2),
-                                         circle, M_PI+angle-outer_angle/2);
-                temp_verts[3] = add_vert(circle->point->GetX() + circle->rA * cos(M_PI+angle+outer_angle/2),
-                                         circle->point->GetY() + circle->rA * sin(M_PI+angle+outer_angle/2),
-                                         circle, M_PI+angle+outer_angle/2);
-                //Добавление граней
-                edge line;
-                line.chosen = false;
-                line.passed = false;
-                line.type = LINEAR;
-                line.pA = temp_verts[0];
-                line.pB = temp_verts[2];
-                line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                temp_edges[0] = line;
-                line.pA = temp_verts[1];
-                line.pB = temp_verts[3];
-                line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-                temp_edges[1] = line;
+                temp_count = get_edges_point_to_circle(temp_verts, temp_edges, A, B);
             }
-            //Проверка на пересечение
-            for (int k = 0; k < temp_count; k++)
+            //Intersection check and vertice merging
+            for (int k = 0; k < temp_count.temp_edges_count; k++)
             {
                 bool end = false;
                 LineCollider lin(temp_edges[k].pA->point->GetX(),
                              temp_edges[k].pA->point->GetY(),
                              temp_edges[k].pB->point->GetX(),
                              temp_edges[k].pB->point->GetY());
-                for (int z = 0; z < count; z++) //Z^3-4
+                for (int z = 0; z < count; z++) //Check collisions with every other object
                 {
                     if (z == i || z == j || objects[z].shape == POINT)
                         continue;
@@ -260,10 +103,10 @@ graph* build_graph(obstacle* objects, int count) //Построение граф
                         break;
                     }
                 }
-                if (end)
+                if (end)    //If there was intersection
                     continue;
-                //Слияние рядом стоящих вершин
-                double eps = 4;
+                //Merge vertices
+                double eps = 4; //Radius of merging
                 bool first = true;
                 bool sec = true;
                 for (unsigned int z = 0; z < result->vertices.size(); z++) //Z^3-4
@@ -291,34 +134,33 @@ graph* build_graph(obstacle* objects, int count) //Построение граф
 
                 }
                 result->edges.push_back(temp_edges[k]);
-                if (first)
+                if (first)  //If there was no merge, push new vertices
                 {
                     result->vertices.push_back(temp_edges[k].pA);
-                    //qDebug()<<temp_edges[k].pA->angle;
                 }
                 if (sec)
                 {
                     result->vertices.push_back(temp_edges[k].pB);
-                    //qDebug()<<temp_edges[k].pB->angle;
                 }
             }
         }
     }
-    //Соединение дугами - по часовой стрелке
-    std::vector<vertex*> brothers;  //Вершины, лежащие на одном круге
+
+    //Connecting lines with arcs
+    std::vector<vertex*> brothers;  //Vertices lying on the same obstacle
     for (int i = 0; i < count; i++)
     {
-        //Поиск "братьев"
+        //"Brothers" search
         if (objects[i].shape != CIRCLE)
             continue;
-        for (unsigned int j = 0; j < result->vertices.size(); j++)   //Поиск всех вершин, прилежащих к кругу
+        for (unsigned int j = 0; j < result->vertices.size(); j++)   //Looking for every vertex with this obstacle as parent
         {
             if (result->vertices[j]->parent != objects+i)
                 continue;
             brothers.push_back(result->vertices[j]);
-            for (int k = brothers.size()-1; k > 0; k--) //Сортировка по углу
+            for (int k = brothers.size()-1; k > 0; k--) //Sort by angle
             {
-                if (brothers[k]->angle < brothers[k-1]->angle)
+                if (brothers[k]->angle.GetR() < brothers[k-1]->angle.GetR())
                 {
                     vertex* temp = brothers[k];
                     brothers[k] = brothers[k-1];
@@ -326,7 +168,7 @@ graph* build_graph(obstacle* objects, int count) //Построение граф
                 }
             }
         }
-        //Непосредственно соединение дугами
+        //Creating connecting arcs
         int n = brothers.size();
         edge arc;
         arc.chosen = false;
@@ -335,13 +177,13 @@ graph* build_graph(obstacle* objects, int count) //Построение граф
         arc.cy = objects[i].point->GetY();
         arc.rA = objects[i].rA;
 
-        for (int j = 0; j < n; j++)
+        for (int j = 0; j < n; j++) //Looking for every vertex on this obstacle
         {
             int next = j+1;
             if (next > n-1)
                 next = 0;
 
-            //Проверка на пересечение с другими окружностями
+            //Checking for intersection with other circles
             bool intersec = false;
             CircleCollider ptA_c(objects[i].point->GetX(),
                                 objects[i].point->GetY(), arc.rA);
@@ -354,16 +196,12 @@ graph* build_graph(obstacle* objects, int count) //Построение граф
                                     objects[k].rA);
                 if (ptA_c.CheckCollision(&cr_c))
                 {
-                    //Если круги пересекаются - ищем угол
-                    double dx = objects[k].point->GetX() - objects[i].point->GetX();
-                    double dy = objects[k].point->GetY() - objects[i].point->GetY();
-                    double circ_dist = sqrt(dx*dx + dy*dy);
-                    double int_angle = safe_acos(dx/circ_dist);
-                    if (dy<0)
-                        int_angle = 2*M_PI - int_angle;
-                    //Проверка, лежит ли линяи между окружностями на дуге
-                    double min_a = brothers[j]->angle;
-                    double max_a = brothers[next]->angle;
+                    //If there is collision - looking for angle of collision
+                    double int_angle = direction_to_point(objects[i].point->GetX(), objects[i].point->GetY(),
+                                                          objects[k].point->GetX(), objects[k].point->GetY());
+                    //Is angle of collision inside of an arc?
+                    double min_a = brothers[j]->angle.GetR();
+                    double max_a = brothers[next]->angle.GetR();
                     if (min_a > max_a)
                        min_a -= 2*M_PI;
                     if (min_a <= int_angle && int_angle <= max_a)
@@ -375,91 +213,90 @@ graph* build_graph(obstacle* objects, int count) //Построение граф
             }
             if (intersec)
                 continue;
+            //Getting length of arc
             arc.aA = brothers[j]->angle;
             arc.aB = brothers[next]->angle;
             arc.pA = brothers[j];
             arc.pB = brothers[next];
-            if (brothers[next]->angle < brothers[j]->angle)
-                arc.length = (brothers[next]->angle - brothers[j]->angle + 2*M_PI) * arc.rA;
+            if (brothers[next]->angle.GetR() < brothers[j]->angle.GetR())
+                arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.rA;
             else
-                arc.length = (brothers[next]->angle - brothers[j]->angle) * arc.rA;
+                arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.rA;
             result->edges.push_back(arc);
         }
-        //Очистка
+        //Clearing
         brothers.clear();
     }
     return result;
 }
 
-void graph::AStar() //Поиск пути
+void graph::AStar(uint _start, uint _end) //Pathfinding
 {
-    //ПОИСК МЕЖДУ 0 и 1 ВЕРШИНАМИ
-    for (unsigned int i = 0; i < edges.size(); i++)   //Сброс выбранного ранее пути
+    for (unsigned int i = 0; i < edges.size(); i++)   //Clear previous path
         edges[i].chosen = false;
-    vertex* start = vertices[0];
-    vertex* end = vertices[1];
+    vertex* start = vertices[_start];
+    vertex* end = vertices[_end];
     start->dist = 0;
     start->cost = 0;
+    end->dist = 0;
+    end->cost = 0;
     bool running = true;
     std::vector<vertex*> closed;
     std::priority_queue<graph_cmp, std::vector<graph_cmp>, fnctor> open;
 
-    for (unsigned int i = 1; i < vertices.size(); i++)   //Пометка вершин как открытых и вычисление начальной стоимости
+    for (unsigned int i = 0; i < vertices.size(); i++)   //Marking vertices as open and
     {
-        if (i==1)
+        if (i == _start || i == _end)
         {
-            end->dist = 0;
-            end->cost = 0;
+            continue;
         }
         else
         {
-            vertices[i]->dist = sqrt(distance2(*(vertices[i]->point), *(end->point)));
+            vertices[i]->dist = distance(*(vertices[i]->point), *(end->point));
             vertices[i]->cost = 100000;
         }
     }
-    open.push(graph_cmp(start));  //Начальная вершина
-    int path_n; //Номер грани
+    open.push(graph_cmp(start));
     while (running)
     {
         if (open.empty())
         {
             qDebug("PATH NOT FOUND");
+            found_way = false;
             return;
         }
-        vertex* curr = open.top().ptr;  //Выборка вершины с наименьшей стоимостью
+        vertex* curr = open.top().ptr;  //Choosing certex with lowest cost
         open.pop();
-        //Добавление открытых вершин
+        //Adding open vertices
         for (unsigned int i = 0; i < edges.size(); i++)
         {
-            vertex* adj;    //Прилежащая вершина
+            vertex* adj;    //Adjacent vertices
             if (edges[i].pA == curr)
                 adj = edges[i].pB;
             else if (edges[i].pB == curr)
                 adj = edges[i].pA;
             else
-                continue;
-            if (adj == end) //Путь найден
+                continue;   //If this vertex is not adjacent
+            if (adj == end) //ACCEPTING FIRST WAY - MAY BE NOT BEST
             {
                 edges[i].chosen = true;
-                path_n = i;
                 running = false;
                 break;
             }
-            if (std::find(closed.begin(), closed.end(), adj) != closed.end())   //Поиск вершины в закрытых
+            if (std::find(closed.begin(), closed.end(), adj) != closed.end())   //Is this vertex already in closed
                 continue;
-            bool found = false;
-            /*
-            for (int j = 0; j < open.size(); j++)   //Поиск вершины в открытых
+            /*bool found = false;
+            for (int j = 0; j < open.size(); j++)   //Search in open vertices?
             {
                 if (open[j].ptr == adj)
                 {
                     found = true;
                     break;
                 }
-            }*/
+            }
             if (found)
-                continue;
-            //Обновление стоимости - TODO - поменять формулу
+                continue;*/
+            //Cost update
             if (adj->cost > curr->cost + edges[i].length + adj->dist)
                 adj->cost = curr->cost + edges[i].length + adj->dist;
             edges[i].passed = true;
@@ -468,33 +305,37 @@ void graph::AStar() //Поиск пути
         }
         closed.push_back(curr);
     }
-    //Поиск самого пути - TODO - change
+    //Pathfinding
     running = true;
     vertex* back_curr = end;
     double sum_cost = 0;
     while (running)
     {
         if (closed.empty())
+        {
+            found_way = false;
+            qDebug()<<"ERROR - found there is the way, but can't calculate it";
             return;
+        }
         double min_cost = 10000;
         int min_n;
         double min_dist;
         vertex* min_vert;
         for (unsigned int i = 0; i < edges.size(); i++)
         {
-            vertex* back_adj;    //Прилежащая вершина
+            vertex* back_adj;
             if (edges[i].pA == back_curr)
                 back_adj = edges[i].pB;
             else if (edges[i].pB == back_curr)
                 back_adj = edges[i].pA;
             else
+                continue;   //If this vertex is not adjacent
+            if (std::find(closed.begin(), closed.end(), back_adj) == closed.end())   //If vertex was not passed
                 continue;
-            if (std::find(closed.begin(), closed.end(), back_adj) == closed.end())   //Если вершина не в закрытых
-                continue;
-            if (back_adj->cost < min_cost)  //Поиск самой дешевой точки
+            if (back_adj->cost < min_cost)  //Looking for cheapest edge
             {
-                min_cost = back_adj->cost;  //
-                min_dist = edges[i].length; //Длина грани
+                min_cost = back_adj->cost;
+                min_dist = edges[i].length;
                 min_n = i;
                 min_vert = back_adj;
             }
@@ -505,6 +346,7 @@ void graph::AStar() //Поиск пути
         edges[min_n].chosen = true;
         if (back_curr == start)
         {
+            found_way = true;
             qDebug()<<"PATH LENGTH:" << sum_cost;
             return;
         }
@@ -512,26 +354,6 @@ void graph::AStar() //Поиск пути
 
 }
 
-Point* circle_tangent(double cx, double cy, double cr, double a, double b, double c)    //Поиск пересечения прямой и окружности
-{
-    int new_a = b;
-    int new_b = a;
-    int new_c = -a*cx - b*cy;
-
-    int x = (c/b - new_b - new_c) / (new_a - a/b);
-    int y = (-a * x / b);
-
-    return new Point(x, y);
-
-}
-
-double solve_square1(double a, double b, double c)
-{
-    double D = b*b - 4*a*c;
-    if (D < 0)
-        D = 0;
-    return (-b - sqrt(D))/(2*a);
-}
 
 void graph::Show()
 {
@@ -564,8 +386,8 @@ void graph::Show()
             pntr.setPen(penn);
             double sa, ea;
 
-            sa = -5760.0 / (2 * M_PI) * edges[i].pA->angle;
-            ea = -5760.0 / (2 * M_PI) * (edges[i].pB->angle-edges[i].pA->angle);
+            sa = -5760.0 / (2 * M_PI) * edges[i].pA->angle.GetR();
+            ea = -5760.0 / (2 * M_PI) * (edges[i].pB->angle.GetR()-edges[i].pA->angle.GetR());
             if (ea > 0)
                 ea -= 5760;
             pntr.drawArc(edges[i].cx - edges[i].rA, edges[i].cy - edges[i].rA,
@@ -582,4 +404,162 @@ void graph::Show()
     {
         pntr.drawEllipse(vertices[i]->point->GetX(), vertices[i]->point->GetY(), 4, 4);
     }
+}
+
+struct temp_edges get_edges_point_to_point(struct vertex** verts, struct edge* edges,
+                                           struct obstacle* A, struct obstacle* B)  //Add line from point A to point B
+{
+    struct temp_edges count;
+    count.temp_edges_count = 1;
+    count.temp_vertices_count = 2;
+    verts[0] = add_vert(A->point, A);
+    verts[1] = add_vert(B->point, B);
+
+    edge line;
+    line.chosen = false;
+    line.passed = false;
+    line.type = LINEAR;
+    line.pA = verts[0];
+    line.pB = verts[1];
+    line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+    edges[0] = line;
+
+    return count;
+}
+
+struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge* edges,
+                                           struct obstacle* A, struct obstacle* B)  //Add [0,2,4] lines from circle A to circle B
+{
+    double dist2 = distance2(*(A->point), *(B->point));
+    double dist = sqrt(dist2);
+    struct temp_edges count;
+    if (dist < fabs(A->rA - B->rA)) //If one circle contains another - 0 lines
+    {
+        count.temp_edges_count = 0;
+        count.temp_vertices_count = 0;
+        return count;
+    }
+
+    count.temp_edges_count = 2;
+    count.temp_vertices_count = 4;
+
+    double angle = safe_acos((B->point->GetX() - A->point->GetX())/dist);   //Angle between circles
+    if ((B->point->GetY() - A->point->GetY()) < 0)
+        angle = 2*M_PI - angle;
+    double outer_angle = 2 * safe_acos(-fabs(A->rA - B->rA) / dist);  //Angle between outer tangents
+
+    //Adding vertices
+    verts[0] = add_vert(A->point->GetX() + A->rA * cos(angle+outer_angle/2),
+                        A->point->GetY() + A->rA * sin(angle+outer_angle/2),
+                        A, angle+outer_angle/2);
+    verts[1] = add_vert(B->point->GetX() + B->rA * cos(angle+outer_angle/2),
+                        B->point->GetY() + B->rA * sin(angle+outer_angle/2),
+                        B, angle+outer_angle/2);
+    verts[2] = add_vert(A->point->GetX() + A->rA * cos(angle-outer_angle/2),
+                        A->point->GetY() + A->rA * sin(angle-outer_angle/2),
+                        A, angle-outer_angle/2);
+    verts[3] = add_vert(B->point->GetX() + B->rA * cos(angle-outer_angle/2),
+                        B->point->GetY() + B->rA * sin(angle-outer_angle/2),
+                        B, angle-outer_angle/2);
+
+    //Adding edges
+    struct edge line;
+    line.chosen = false;
+    line.passed = false;
+    line.type = LINEAR;
+    line.pA = verts[0];
+    line.pB = verts[1];
+    line.length = distance(*(line.pA->point), *(line.pB->point));
+    edges[0] = line;
+    line.pA = verts[2];
+    line.pB = verts[3];
+    line.length = distance(*(line.pA->point), *(line.pB->point));
+    edges[1] = line;
+
+    if (dist > (A->rA + B->rA)) //If circles dont intersect
+    {
+
+        count.temp_edges_count = 4;
+        count.temp_vertices_count = 8;
+
+        double inner_angle = safe_acos((A->rA + B->rA) / dist);  //Angle between inner tangents
+        verts[4] = add_vert(A->point->GetX() + A->rA * cos(angle+inner_angle),
+                                 A->point->GetY() + A->rA * sin(angle+inner_angle),
+                                 A, angle+inner_angle);
+        verts[5] = add_vert(B->point->GetX() + B->rA * cos(M_PI+angle+inner_angle),
+                                 B->point->GetY() + B->rA * sin(M_PI+angle+inner_angle),
+                                 B, M_PI+angle+inner_angle);
+
+        verts[6] = add_vert(A->point->GetX() + A->rA * cos(angle-inner_angle),
+                                 A->point->GetY() + A->rA * sin(angle-inner_angle),
+                                 A, angle-inner_angle);
+        verts[7] = add_vert(B->point->GetX() + B->rA * cos(M_PI+angle-inner_angle),
+                                 B->point->GetY() + B->rA * sin(M_PI+angle-inner_angle),
+                                 B, M_PI+angle-inner_angle);
+
+        //Adding inner edges
+        edge line;
+        line.chosen = false;
+        line.passed = false;
+        line.type = LINEAR;
+        line.pA = verts[4];
+        line.pB = verts[5];
+        line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+        edges[2] = line;
+        line.pA = verts[6];
+        line.pB = verts[7];
+        line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+        edges[3] = line;
+    }
+    return count;
+}
+
+struct temp_edges get_edges_point_to_circle(struct vertex** verts, struct edge* edges,
+                                           struct obstacle* A, struct obstacle* B)  //Add 0 or 2 lines from point A to circle B (or vice-versa)
+{
+    double dist = sqrt(distance2(*(A->point), *(B->point)));
+    obstacle* pt;   //Point
+    obstacle* circle;   //Circle
+    if (A->shape == CIRCLE) //Deciding who is who
+    {
+        circle = A;
+        pt = B;
+    }
+    else
+    {
+        circle = B;
+        pt = A;
+    }
+    struct temp_edges count;
+    count.temp_vertices_count = 4;
+    count.temp_edges_count = 2;
+
+    double angle = safe_acos((circle->point->GetX() - pt->point->GetX())/dist);
+    if ((circle->point->GetY() - pt->point->GetY()) < 0)
+        angle = 2*M_PI - angle;
+    double outer_angle = 2 * safe_acos(circle->rA / dist);  //Angle between outer tangents
+
+    verts[0] = add_vert(pt->point->GetX(),
+                             pt->point->GetY(), pt);
+    verts[1] = add_vert(pt->point->GetX(),
+                             pt->point->GetY(), pt);
+    verts[2] = add_vert(circle->point->GetX() + circle->rA * cos(M_PI+angle-outer_angle/2),
+                             circle->point->GetY() + circle->rA * sin(M_PI+angle-outer_angle/2),
+                             circle, M_PI+angle-outer_angle/2);
+    verts[3] = add_vert(circle->point->GetX() + circle->rA * cos(M_PI+angle+outer_angle/2),
+                             circle->point->GetY() + circle->rA * sin(M_PI+angle+outer_angle/2),
+                             circle, M_PI+angle+outer_angle/2);
+    struct edge line;
+    line.chosen = false;
+    line.passed = false;
+    line.type = LINEAR;
+    line.pA = verts[0];
+    line.pB = verts[2];
+    line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+    edges[0] = line;
+    line.pA = verts[1];
+    line.pB = verts[3];
+    line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+    edges[1] = line;
+    return count;
 }
