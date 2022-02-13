@@ -1,4 +1,5 @@
 #include "objects.h"
+#include "collision.h"
 
 extern QPixmap* picture;
 //--- Point class realization ---
@@ -64,6 +65,42 @@ double Point::GetX()
 double Point::GetY()
 {
     return y;
+}
+
+double distance2(Point a, Point b)
+{
+
+    return (b.GetX()-a.GetX())*(b.GetX()-a.GetX()) + (b.GetY()-a.GetY())*(b.GetY()-a.GetY());
+}
+
+double distance(Point a, Point b)
+{
+
+    return sqrt(distance2(a, b));
+}
+
+Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double c2) //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
+{
+    //Solution of system of linear equations : X = A^(-1)xB
+    Matrix A(2, 2);
+    A.SetElem(a1, 0, 0);
+    A.SetElem(b1, 0, 1);
+    A.SetElem(a2, 1, 0);
+    A.SetElem(b2, 1, 1);
+    //Checking determinant
+    double _Det = A.det();
+    if (almostEq(_Det, 0))
+    {
+        return nullptr;
+    }
+    Matrix C(2, 1);
+    C.SetElem(-c1, 0, 0);
+    C.SetElem(-c2, 1, 0);
+    Matrix A_inv = A.inverse();
+    Matrix res = A_inv * C;
+    double res_x = res.GetElem(0, 0);
+    double res_y = res.GetElem(1, 0);
+    return new Point(res_x, res_y);
 }
 
 
@@ -140,6 +177,10 @@ Circle::~Circle()
 
 }
 
+double Circle::GetR()
+{
+    return r;
+}
 
 
 //=== Entity class realization ===

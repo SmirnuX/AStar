@@ -1,36 +1,17 @@
 #ifndef ADD_MATH_H
 #define ADD_MATH_H
 
+#include <QPainter>
+
 constexpr double EPSILON = 0.001;
 
-#include <math.h>
-#include "objects.h"
-#include "collision.h"
+class Collider;
+class Point;
 
 //Trigonometry
+
 double degtorad(double angle);  //Convert degrees to radians
 double radtodeg(double angle);  //Convert radians to degrees
-
-double direction_to_point(double from_x, double from_y, double to_x, double to_y);  //Calculate driection from (from_x, from_y) to (to_x, to_y)
-double anglediff(double a, double b);    //Angle difference in range from -180 to 180
-
-double safe_acos(double cos);   //If safe_acos is called with cos > 1 or < -1, it converts it to nearest right value
-double safe_asin(double sin);
-
-
-double distance2(double ax, double ay, double bx, double by);  //Square distacnce between points
-double distance2(Point a, Point b);
-
-double distance(double ax, double ay, double bx, double by);  //Distance between points
-double distance(Point a, Point b);
-
-
-double sign(double a);  //1 if a >=0, -1 if a<0
-bool almostEq(double a, double b, double eps = EPSILON);  //Are delta between a and b lesser then eps
-bool intersect(double a1, double a2, double b1, double b2); //Does (a1,a2) and (b1, b2) intersect.
-Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double c2); //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
-
-void DrawTurnedRect(QPainter* painter, double x, double y, double angle, double width, double height);
 
 //Angle class
 class Angle
@@ -50,23 +31,45 @@ public:
     Angle normalL() const;   //Get left normal
     Angle normalR() const;   //Get right normal
 
-    Angle& operator+=(Angle& a);
+    Angle& operator+=(const Angle &a);
     Angle& operator+=(double rad);
 
-    Angle& operator-=(Angle& a);
+    Angle& operator-=(const Angle& a);
     Angle& operator-=(double rad);
 
-    Angle& operator=(Angle& right);
+    Angle& operator=(const Angle& right);
     Angle& operator=(double rad);
+
+//    operator double() const;    //Cast to double overload
 };
 
-Angle operator+(Angle& left, Angle& right);
-Angle operator-(Angle& left, Angle& right);
+Angle operator+(Angle left, const Angle& right);
+Angle operator-(Angle left, const Angle& right);
+Angle operator+(Angle left, double right);
+Angle operator-(Angle left, double right);
 
-bool operator==(Angle& left, Angle& right);
-bool operator!=(Angle& left, Angle& right);
-bool operator<(Angle& left, Angle& right);  //Checks, if smaller angle between left and right is negative
-bool operator>(Angle& left, Angle& right);
+bool operator==(const Angle& left, const Angle& right);
+bool operator!=(const Angle& left, const Angle& right);
+bool operator<(const Angle& left, const Angle& right);  //Checks, if smaller angle between left and right is negative
+bool operator>(const Angle& left, const Angle& right);
+
+double direction_to_point(double from_x, double from_y, double to_x, double to_y);  //Calculate driection from (from_x, from_y) to (to_x, to_y)
+double anglediff(double a, double b);    //Angle difference in range from -180 to 180
+
+double safe_acos(double cos);   //If safe_acos is called with cos > 1 or < -1, it converts it to nearest right value
+double safe_asin(double sin);
+
+
+double distance2(double ax, double ay, double bx, double by);  //Square distacnce between points
+double distance(double ax, double ay, double bx, double by);  //Distance between points
+
+
+
+double sign(double a);  //1 if a >=0, -1 if a<0
+bool almostEq(double a, double b, double eps = EPSILON);  //Are delta between a and b lesser then eps
+bool intersect(double a1, double a2, double b1, double b2); //Does (a1,a2) and (b1, b2) intersect.
+
+void DrawTurnedRect(QPainter* painter, double x, double y, Angle angle, double width, double height);
 
 
 //Matrix class

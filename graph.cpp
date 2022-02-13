@@ -48,7 +48,7 @@ vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle)    //Verte
     return res;
 }
 
-vertex* add_vert(Point* pt, obstacle* _parent, double _angle)    //Vertex creation
+vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle)    //Vertex creation
 {
     vertex* res = new vertex;
     res->point = new Point(pt->GetX(), pt->GetY());

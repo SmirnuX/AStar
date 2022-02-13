@@ -8,16 +8,17 @@
 #include <QKeyEvent>
 #include <QTime>
 #include <QTimer>
-#include "add_math.h"
 #include <queue>
 #include <vector>
 #include <algorithm>
-#include "list.h"
-#include "collision.h"
-#include "objects.h"
-#include "tanks.h"
 #include "ui.h"
 #include "graph.h"
+#include "objects.h"
+#include "tanks.h"
+#include "list.h"
+#include "add_math.h"
+
+
 
 extern QPixmap* picture;
 extern bool SHOW_COLLIDERS;

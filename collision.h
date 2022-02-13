@@ -1,8 +1,10 @@
 #ifndef COLLISION_H
 #define COLLISION_H
-#include <QPainter>
-#include "add_math.h"
+
 #include "objects.h"
+#include <limits>
+
+extern QPixmap* picture;
 
 class PointCollider;
 class LineCollider;
@@ -27,9 +29,6 @@ public:
 
     virtual void SetAngle(Angle _angle);
 
-    //virtual void UpdateBoundingBox(double x, double y) = 0;
-    //Polygon* BoundingBox;
-    //bool CheckSimpleCollision(Collider* other);   //Check collision of bounding boxes
 };
 
 class PointCollider : public Collider

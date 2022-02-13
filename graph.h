@@ -4,7 +4,9 @@
 #define MAX_TEMP_EDGES 4
 #define MAX_TEMP_VERTS 8
 
-#include "game.h"
+#include "objects.h"
+#include "collision.h"
+
 
 extern QPixmap* picture;
 

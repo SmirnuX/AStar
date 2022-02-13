@@ -1,4 +1,5 @@
 #include "tanks.h"
+#include "add_math.h"
 extern EntityStack* stack;
 
 //-------Реализация функций класса BaseTank-------
@@ -58,8 +59,8 @@ Tank::Tank(float _x, float _y):BaseTank(_x,_y)
     collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
 
     //Зрение
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
+    double tower_x = x + cos((angle + M_PI).GetR()) * cannon_length * 0.3;
+    double tower_y = y - sin((angle + M_PI).GetR()) * cannon_length * 0.3;
     FOV_collider = (Collider*) new LineCollider(tower_x, tower_y, tower_x + FOV_distance, tower_y);
 }
 
@@ -92,10 +93,10 @@ void Tank::OnStep()
     }
 
     //Зрение
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
+    double tower_x = x + cos((angle + Angle(M_PI)).GetR()) * cannon_length * 0.3;
+    double tower_y = y - sin((angle + Angle(M_PI)).GetR()) * cannon_length * 0.3;
      ((Point*)FOV_collider)->MoveTo(tower_x, tower_y);
-    FOV_collider->SetAngle(degtorad(cannon_angle + angle));
+    FOV_collider->SetAngle(cannon_angle + angle);
 
 
     EntityStackItem* saved = stack->current;
@@ -133,8 +134,8 @@ void Tank::ShowTracks()  //Отрисовка гусениц танка
     pic_pntr.setBrush(Brush);
 
     double distance = 0.5 * base_width;    //Расстояние между гусеницами
-    DrawTurnedRect(&pic_pntr, x - distance * sin(degtorad(angle)), y - distance * cos(degtorad(angle)), angle, 1.2 * base_length, 0.2 * base_width);
-    DrawTurnedRect(&pic_pntr, x + distance * sin(degtorad(angle)), y + distance * cos(degtorad(angle)), angle, 1.2 * base_length, 0.2 * base_width);
+    DrawTurnedRect(&pic_pntr, x - distance * sin(angle.GetR()), y - distance * cos(angle.GetR()), angle, 1.2 * base_length, 0.2 * base_width);
+    DrawTurnedRect(&pic_pntr, x + distance * sin(angle.GetR()), y + distance * cos(angle.GetR()), angle, 1.2 * base_length, 0.2 * base_width);
 }
 
 void Tank::ShowBase()  //Отрисовка корпуса танка
@@ -152,12 +153,12 @@ void Tank::ShowCannon() //Отрисовка пушки танка
     QPainter pic_pntr(picture);
 
     double tower_radius = cannon_length * 0.3;
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
+    double tower_x = x + cos((angle + M_PI).GetR()) * cannon_length * 0.3;
+    double tower_y = y - sin((angle + M_PI).GetR()) * cannon_length * 0.3;
     ShowFOV(&pic_pntr, tower_x, tower_y);
 
-    double cannon_x = tower_x + cos(degtorad(angle + cannon_angle)) * cannon_length * 0.5;
-    double cannon_y = tower_y - sin(degtorad(angle + cannon_angle)) * cannon_length * 0.5;
+    double cannon_x = tower_x + cos((angle + cannon_angle).GetR()) * cannon_length * 0.5;
+    double cannon_y = tower_y - sin((angle + cannon_angle).GetR()) * cannon_length * 0.5;
     QBrush Brush(QColor(0, 100, 0));
 
     pic_pntr.setPen(QColor(0, 0, 0));
@@ -166,44 +167,6 @@ void Tank::ShowCannon() //Отрисовка пушки танка
     DrawTurnedRect(&pic_pntr, cannon_x, cannon_y, angle + cannon_angle, cannon_length, cannon_width);
 }
 
-void Tank::HideTracks()  //Сокрытие гусениц танка
-{
-    QPainter pic_pntr(picture);
-    QBrush Brush(QColor(255, 255, 255));
-    pic_pntr.setPen(QColor(255, 255, 255));
-    pic_pntr.setBrush(Brush);
-
-    double distance = 0.5 * base_width;    //Расстояние между гусеницами
-    DrawTurnedRect(&pic_pntr, x - distance * sin(degtorad(angle)), y - distance * cos(degtorad(angle)), angle, 1.2 * base_length, 0.2 * base_width);
-    DrawTurnedRect(&pic_pntr, x + distance * sin(degtorad(angle)), y + distance * cos(degtorad(angle)), angle, 1.2 * base_length, 0.2 * base_width);
-}
-
-void Tank::HideBase()  //Сокрытие корпуса танка
-{
-    QPainter pic_pntr(picture);
-    QBrush Brush(QColor(255, 255, 255));
-    pic_pntr.setPen(QColor(255, 255, 255));
-    pic_pntr.setBrush(Brush);
-
-    DrawTurnedRect(&pic_pntr, x, y, angle, base_length, base_width);
-}
-
-void Tank::HideCannon()  //Сокрытие пушки танка
-{
-    QPainter pic_pntr(picture);
-
-    double tower_radius = cannon_length * 0.3;
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
-    HideFOV(&pic_pntr, tower_x, tower_y);
-    double cannon_x = tower_x + cos(degtorad(angle + cannon_angle)) * cannon_length * 0.5;
-    double cannon_y = tower_y - sin(degtorad(angle + cannon_angle)) * cannon_length * 0.5;
-    QBrush Brush(QColor(255, 255, 255));
-    pic_pntr.setPen(QColor(255, 255, 255));
-    pic_pntr.setBrush(Brush);
-    pic_pntr.drawEllipse(tower_x - tower_radius, tower_y - tower_radius, 2 * tower_radius, 2 * tower_radius);
-    DrawTurnedRect(&pic_pntr, cannon_x, cannon_y, angle + cannon_angle, cannon_length, cannon_width);
-}
 
 
 
@@ -213,7 +176,7 @@ BaseBullet::BaseBullet(float _x, float _y, Entity* _parent):MovingEntity(_x, _y)
     collision_mask = new CircleCollider(_x, _y, 5);
 }
 
-Bullet::Bullet(float _x, float _y, double _angle, Entity* _parent):BaseBullet(_x, _y, _parent)
+Bullet::Bullet(float _x, float _y, Angle _angle, Entity* _parent):BaseBullet(_x, _y, _parent)
 {
     speed = 4;
     angle = _angle;
@@ -224,16 +187,6 @@ void Bullet::Show()
     QPainter pic_pntr(picture);
     QBrush Brush(QColor(255, 0, 0));
     pic_pntr.setPen(QColor(0, 0, 0));
-    pic_pntr.setBrush(Brush);
-
-    pic_pntr.drawEllipse(x - 5, y - 5, 10, 10);
-}
-
-void Bullet::Hide()
-{
-    QPainter pic_pntr(picture);
-    QBrush Brush(QColor(255, 255, 255));
-    pic_pntr.setPen(QColor(255, 255, 255));
     pic_pntr.setBrush(Brush);
 
     pic_pntr.drawEllipse(x - 5, y - 5, 10, 10);
@@ -272,8 +225,8 @@ EnemyTank::EnemyTank(float _x, float _y) : BaseTank(_x, _y)
     collision_mask = new PolygonCollider(x_s, y_s, 4, x, y);
 
     //Зрение
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.35;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.35;
+    double tower_x = x + cos(degtorad((angle + M_PI).GetR())) * cannon_length * 0.35;
+    double tower_y = y - sin(degtorad((angle + M_PI).GetR())) * cannon_length * 0.35;
     FOV_collider = new LineCollider(tower_x, tower_y, tower_x + FOV_distance, tower_y);
 }
 
@@ -301,10 +254,10 @@ void EnemyTank::OnStep()
         reload_timeout = 0;
 
     //Зрение
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
+    double tower_x = x + cos(angle.GetR() + M_PI) * cannon_length * 0.3;
+    double tower_y = y - sin(angle.GetR() + M_PI) * cannon_length * 0.3;
     FOV_collider->MoveTo(tower_x, tower_y);
-    FOV_collider->SetAngle(degtorad(cannon_angle + angle));
+    FOV_collider->SetAngle((cannon_angle + angle).GetR());
 
     EntityStackItem* saved = stack->current;
 
@@ -330,8 +283,8 @@ void EnemyTank::ShowTracks()  //Отрисовка гусениц танка
     pic_pntr.setBrush(Brush);
 
     double distance = 0.5 * base_width;    //Расстояние между гусеницами
-    DrawTurnedRect(&pic_pntr, x - distance * sin(degtorad(angle)), y - distance * cos(degtorad(angle)), angle, 1.2 * base_length, 0.2 * base_width);
-    DrawTurnedRect(&pic_pntr, x + distance * sin(degtorad(angle)), y + distance * cos(degtorad(angle)), angle, 1.2 * base_length, 0.2 * base_width);
+    DrawTurnedRect(&pic_pntr, x - distance * sin(angle.GetR()), y - distance * cos(angle.GetR()), angle, 1.2 * base_length, 0.2 * base_width);
+    DrawTurnedRect(&pic_pntr, x + distance * sin(angle.GetR()), y + distance * cos(angle.GetR()), angle, 1.2 * base_length, 0.2 * base_width);
 }
 
 void EnemyTank::ShowBase()  //Отрисовка корпуса танка
@@ -349,33 +302,18 @@ void EnemyTank::ShowCannon()  //Отрисовка пушки танка
     QPainter pic_pntr(picture);
 
     double tower_radius = cannon_length * 0.3;
-    double tower_x = x + cos(degtorad(angle + 180)) * cannon_length * 0.3;
-    double tower_y = y - sin(degtorad(angle + 180)) * cannon_length * 0.3;
+    double tower_x = x + cos((angle + M_PI).GetR()) * cannon_length * 0.3;
+    double tower_y = y - sin((angle + M_PI).GetR()) * cannon_length * 0.3;
     ShowFOV(&pic_pntr, tower_x, tower_y);
 
-    double cannon_x = tower_x + cos(degtorad(angle + cannon_angle)) * cannon_length * 0.5;
-    double cannon_y = tower_y - sin(degtorad(angle + cannon_angle)) * cannon_length * 0.5;
+    double cannon_x = tower_x + cos((angle + cannon_angle).GetR()) * cannon_length * 0.5;
+    double cannon_y = tower_y - sin((angle + cannon_angle).GetR()) * cannon_length * 0.5;
     QBrush Brush(QColor(244, 164, 96));
 
     pic_pntr.setPen(QColor(0, 0, 0));
     pic_pntr.setBrush(Brush);
     pic_pntr.drawEllipse(tower_x - tower_radius, tower_y - tower_radius, 2 * tower_radius, 2 * tower_radius);
     DrawTurnedRect(&pic_pntr, cannon_x, cannon_y, angle + cannon_angle, cannon_length, cannon_width);
-}
-
-void EnemyTank::HideTracks()  //Сокрытие гусениц танка
-{
-
-}
-
-void EnemyTank::HideBase()  //Сокрытие корпуса танка
-{
-
-}
-
-void EnemyTank::HideCannon()  //Сокрытие пушки танка
-{
-
 }
 
 QString EnemyTank::GetName()
@@ -393,7 +331,7 @@ void Tank::RideTo(Box* obstacle) //ТЕСТ обьезд квдарата
         obstacle->GetY() + obstacle->a < y - threshold ||    //Если прямоугольник ниже
         obstacle->GetY() - obstacle->a > y + threshold  )    //Если прямоугольник выше
     {
-        if (angle != 0)
+        if (angle != Angle(0))
         {
             if (angle < delta_angle || angle > 360-delta_angle)
                 SetAngle(0);
@@ -410,14 +348,14 @@ void Tank::RideTo(Box* obstacle) //ТЕСТ обьезд квдарата
     else    //По верхней
         ty = obstacle->GetY() - obstacle->a - threshold;
 
-    double front_x = x + threshold + (speed + acc) * cos(degtorad(angle));
+    double front_x = x + threshold + (speed + acc) * cos(angle.GetR());
     if (front_x > tx)  //Торможение
         SetSpeed(speed - acc);
     else
         SetSpeed(speed + acc);  //Ускорение
 
 
-    front_x = x + threshold + (speed + acc) * cos(degtorad(angle));
+    front_x = x + threshold + (speed + acc) * cos(angle.GetR());
     double ta;  //Целевой угол
     if (fabs(tx - front_x) < threshold)
         ta = (ty-y) > 0 ? 90 : -90;
@@ -425,7 +363,7 @@ void Tank::RideTo(Box* obstacle) //ТЕСТ обьезд квдарата
         ta = radtodeg( atan((ty-y)/(tx-front_x)));
     if (angle != ta)
     {
-        double temp_a = angle;
+        double temp_a = angle.GetD();
         if (temp_a > 180)
             temp_a -= 360;
         if (fabs(ta - temp_a) < delta_angle)
@@ -446,7 +384,7 @@ void Tank::BuildPath(double tx, double ty)  //Построение ПРОСТО�
     double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
     double path_x = x;
     double path_y = y;
-    double path_angle = -angle;
+    double path_angle = -angle.GetD();
     double friction = 0.1;
     if (path_angle > 180)
         path_angle -= 360;
@@ -456,7 +394,7 @@ void Tank::BuildPath(double tx, double ty)  //Построение ПРОСТО�
     for (int i = 0; i < MAX_POINTS; i++)
     {
         double ideal_angle = radtodeg(atan( (ty-path_y)/(tx-path_x) ));
-        if (!almostEq(angle, ideal_angle))  //Поворот
+        if (!almostEq(angle.GetD(), ideal_angle))  //Поворот
         {
             if (fabs(anglediff(ideal_angle, path_angle)) < rot_speed)
                 path_angle = ideal_angle;
@@ -536,9 +474,9 @@ void Tank::FollowPath()
         Accelerate(path->s[path->i] - speed);
     else
         Deccelerate(speed - path->s[path->i]);
-    if (fabs(anglediff(- path->a[path->i], angle)) < rot_speed)
+    if (fabs(anglediff(- path->a[path->i], angle.GetD())) < rot_speed)
         SetAngle(- path->a[path->i]);
-    else if (anglediff(- path->a[path->i], angle) > 0)
+    else if (anglediff(- path->a[path->i], angle.GetD()) > 0)
         Turn(rot_speed);
     else
         Turn(-rot_speed);
@@ -565,7 +503,7 @@ void Tank::BuildPath(double tx, double ty, Box* obstacle)    //ТЕСТ Обье
     double side = 2 * obstacle->a * 0.8;    //Примерная диагональ квадрата
     double path_x = x;
     double path_y = y;
-    double path_angle = -angle;
+    double path_angle = -angle.GetD();
     double friction = 0.1;
     if (path_angle > 180)
         path_angle -= 360;

@@ -1,5 +1,5 @@
 #include "collision.h"
-#include <limits>
+
 
 //=== Collider class realization ===
 
@@ -188,7 +188,7 @@ bool LineCollider::CheckCollision(LineCollider* other)       //Collision with li
     Matrix A_inv = A.inverse();
     Matrix res = A_inv * C;
     double res_x = res.GetElem(0, 0);
-    double res_y = res.GetElem(0, 1);
+    double res_y = res.GetElem(1, 0);
     return (line->GetMinX() < res_x && res_x < line->GetMaxX() &&
             line->GetMinY() < res_y && res_y < line->GetMaxY());
 }

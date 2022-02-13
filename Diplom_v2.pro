@@ -2,7 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -20,7 +20,6 @@ SOURCES += \
     tanks.cpp
 
 HEADERS += \
-    TODO.h \
     add_math.h \
     collision.h \
     game.h \
@@ -38,3 +37,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 DISTFILES += \
     Diplom_v2.pro.user \
     TODO_list
+
+STATECHARTS += \
+    state.scxml

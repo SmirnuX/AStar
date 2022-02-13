@@ -144,8 +144,8 @@ void game::mousePressEvent(QMouseEvent *event)    //Mouse event handler
     if (event->button() == Qt::RightButton) {   //Rotating tank head
         double mouse_angle = direction_to_point(player->GetX(), player->GetY(), event->pos().x(), -event->pos().y());   //Invert Y axis
         if (event->pos().x() < player->GetX())
-            mouse_angle += 180;
-        player->SetCannonAngle(mouse_angle - player->GetAngle());
+            mouse_angle += M_PI;
+        player->SetCannonAngle(Angle(mouse_angle) - player->GetAngle());
     }
     else if (event->button() == Qt::LeftButton)
     {

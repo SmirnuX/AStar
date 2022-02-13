@@ -1,6 +1,7 @@
 #include "add_math.h"
 
 //=== Trigonometry ===
+
 double degtorad(double angle)  //Convert degrees to radians
 {
     return angle * M_PI / 180.0;
@@ -10,6 +11,146 @@ double radtodeg(double angle)  //Convert radians to degrees
 {
     return angle * 180 / M_PI;
 }
+
+
+//=== Angle class realization ===
+Angle::Angle()  //Uninitialized angle
+{
+
+}
+
+Angle::Angle(double rad)
+{
+    angle = rad;
+    CorrectAngle();
+}
+
+void Angle::CorrectAngle()   //Correct angle to be in range from 0 to 2PI
+{
+    while (angle < 0 || angle >= 2*M_PI)
+    {
+        if (angle < 0)
+            angle += 2*M_PI;
+        else if (angle >= 2*M_PI)
+            angle -= 2*M_PI;
+    }
+}
+
+double Angle::GetR() const  //Get angle in radians
+{
+    return angle;
+}
+
+double Angle::GetD() const  //Get angle in degrees
+{
+    return radtodeg(angle);
+}
+
+Angle Angle::normalL() const   //Get left normal
+{
+    Angle a = Angle(GetR() + M_PI/4);
+    return a;
+}
+
+Angle Angle::normalR() const  //Get right normal
+{
+    Angle a = Angle(GetR() - M_PI/4);
+    return a;
+}
+
+Angle& Angle::operator+=(const Angle& a)
+{
+    angle += a.GetR();
+    CorrectAngle();
+    return *this;
+}
+
+Angle& Angle::operator+=(double a)
+{
+    angle += a;
+    CorrectAngle();
+    return *this;
+}
+
+Angle& Angle::operator-=(const Angle& rad)
+{
+    *this += -rad.GetR();
+    return *this;
+}
+
+Angle& Angle::operator-=(double a)
+{
+    *this += -a;
+    return *this;
+}
+
+Angle& Angle::operator=(const Angle& right)
+{
+    angle = right.GetR();
+    CorrectAngle();
+    return *this;
+}
+
+Angle& Angle::operator=(double rad)
+{
+    angle = rad;
+    CorrectAngle();
+    return *this;
+}
+
+//Angle::operator double() const
+//{
+//    return angle;
+//}
+
+Angle operator+(Angle left, const Angle& right)
+{
+    Angle temp = left.GetR();
+    temp += right;
+    return temp;
+}
+
+Angle operator-(Angle left, const Angle& right)
+{
+    Angle temp = left.GetR();
+    temp -= right;
+    return temp;
+}
+
+Angle operator+(Angle left, double right)
+{
+    Angle temp = left.GetR();
+    temp += right;
+    return temp;
+}
+
+Angle operator-(Angle left, double right)
+{
+    Angle temp = left.GetR();
+    temp -= right;
+    return temp;
+}
+
+bool operator==(const Angle& left, const Angle& right)
+{
+    return almostEq(left.GetR(), right.GetR());
+}
+
+bool operator!=(const Angle& left, const Angle& right)
+{
+    return !(left.GetR() == right.GetR());
+}
+
+bool operator<(const Angle& left, const Angle& right)    //Checks, if smaller angle between left and right is negative
+{
+    return ((left-right).GetR() > M_PI);
+}
+
+bool operator>(const Angle& left, const Angle& right)
+{
+    return ((left-right).GetR() < M_PI);
+}
+
 
 double direction_to_point(double from_x, double from_y, double to_x, double to_y) //Calculate driection from (from_x, from_y) to (to_x, to_y)
 {
@@ -76,22 +217,14 @@ double distance2(double ax, double ay, double bx, double by)  //Square distance 
     return (bx-ax)*(bx-ax) + (by-ay)*(by-ay);
 }
 
-double distance2(Point a, Point b)
-{
 
-    return (b.GetX()-a.GetX())*(b.GetX()-a.GetX()) + (b.GetY()-a.GetY())*(b.GetY()-a.GetY());
-}
 
 double distance(double ax, double ay, double bx, double by)  //Distance between points
 {
     return sqrt(distance2(ax, ay, bx, by));
 }
 
-double distance(Point a, Point b)
-{
 
-    return sqrt(distance2(a, b));
-}
 
 
 //=== Simple helper functions ===
@@ -142,40 +275,18 @@ bool intersect(double a1, double a2, double b1, double b2) //Does (a1,a2) and (b
     return max_of_min < min_of_max;
 }
 
-Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double c2) //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
-{
-    //Solution of system of linear equations : X = A^(-1)xB
-    Matrix A(2, 2);
-    A.SetElem(a1, 0, 0);
-    A.SetElem(b1, 0, 1);
-    A.SetElem(a2, 1, 0);
-    A.SetElem(b2, 1, 1);
-    //Checking determinant
-    double _Det = A.det();
-    if (almostEq(_Det, 0))
-    {
-        return nullptr;
-    }
-    Matrix C(2, 1);
-    C.SetElem(-c1, 0, 0);
-    C.SetElem(-c2, 1, 0);
-    Matrix A_inv = A.inverse();
-    Matrix res = A_inv * C;
-    double res_x = res.GetElem(0, 0);
-    double res_y = res.GetElem(0, 1);
-    return new Point(res_x, res_y);
-}
 
 
-void DrawTurnedRect(QPainter* painter, double x, double y, double angle, double width, double height)   //Draw turned rectangle
+
+void DrawTurnedRect(QPainter* painter, double x, double y, Angle angle, double width, double height)   //Draw turned rectangle
 {
     QPoint points[4];
     double diag_angle = atan(height/width);
     double diag = sqrt(width*width + height*height)/2;
-    double sinus = sin(diag_angle + degtorad(angle));
-    double cosinus = cos(diag_angle + degtorad(angle));
-    double r_sinus = sin(M_PI - diag_angle + degtorad(angle));
-    double r_cosinus = cos(M_PI - diag_angle + degtorad(angle));
+    double sinus = sin(diag_angle + angle.GetR());
+    double cosinus = cos(diag_angle + angle.GetR());
+    double r_sinus = sin(M_PI - diag_angle + angle.GetR());
+    double r_cosinus = cos(M_PI - diag_angle + angle.GetR());
     points[0] = QPoint(x + cosinus * diag, y - sinus * diag);
     points[1] = QPoint(x + r_cosinus * diag, y - r_sinus * diag);
     points[2] = QPoint(x - cosinus * diag, y + sinus * diag);
@@ -184,124 +295,6 @@ void DrawTurnedRect(QPainter* painter, double x, double y, double angle, double 
 }
 
 
-//=== Angle class realization ===
-Angle::Angle()  //Uninitialized angle
-{
-
-}
-
-Angle::Angle(double rad)
-{
-    angle = rad;
-    CorrectAngle();
-}
-
-void Angle::CorrectAngle()   //Correct angle to be in range from 0 to 2PI
-{
-    while (angle < 0 || angle >= 2*M_PI)
-    {
-        if (angle < 0)
-            angle += 2*M_PI;
-        else if (angle >= 2*M_PI)
-            angle -= 2*M_PI;
-    }
-}
-
-double Angle::GetR() const  //Get angle in radians
-{
-    return angle;
-}
-
-double Angle::GetD() const  //Get angle in degrees
-{
-    return radtodeg(angle);
-}
-
-Angle Angle::normalL() const   //Get left normal
-{
-    Angle a = Angle(GetR() + M_PI/4);
-    return a;
-}
-
-Angle Angle::normalR() const  //Get right normal
-{
-    Angle a = Angle(GetR() - M_PI/4);
-    return a;
-}
-
-Angle& Angle::operator+=(Angle& a)
-{
-    angle += a.GetR();
-    CorrectAngle();
-    return *this;
-}
-
-Angle& Angle::operator+=(double a)
-{
-    angle += a;
-    CorrectAngle();
-    return *this;
-}
-
-Angle& Angle::operator-=(Angle& rad)
-{
-    *this += -rad.GetR();
-    return *this;
-}
-
-Angle& Angle::operator-=(double a)
-{
-    *this += -a;
-    return *this;
-}
-
-Angle& Angle::operator=(Angle& right)
-{
-    angle = right.GetR();
-    CorrectAngle();
-    return *this;
-}
-
-Angle& Angle::operator=(double rad)
-{
-    angle = rad;
-    CorrectAngle();
-    return *this;
-}
-
-Angle operator+(Angle& left, Angle& right)
-{
-    Angle temp = left.GetR();
-    temp += right;
-    return temp;
-}
-
-Angle operator-(Angle& left, Angle& right)
-{
-    Angle temp = left.GetR();
-    temp -= right;
-    return temp;
-}
-
-bool operator==(Angle& left, Angle& right)
-{
-    return almostEq(left.GetR(), right.GetR());
-}
-
-bool operator!=(Angle& left, Angle& right)
-{
-    return !(left.GetR() == right.GetR());
-}
-
-bool operator<(Angle& left, Angle& right)    //Checks, if smaller angle between left and right is negative
-{
-    return ((left-right).GetR() > M_PI);
-}
-
-bool operator>(Angle& left, Angle& right)
-{
-    return ((left-right).GetR() < M_PI);
-}
 
 
 //=== Matrix class realization ===
@@ -418,7 +411,8 @@ double Matrix::GetElem(int i, int j)   //Get element from i row and j column
 {
     if (i < 0 || i >= h || j < 0 || j >= w)
     {
-        throw std::runtime_error("Out of matrix bounds.");
+        throw std::runtime_error((QString("Out of matrix bounds. [TRIED TO GET ") + QString::number(i) + "," + QString::number(j) +
+                                 " FROM " + QString::number(h) + "x" + QString::number(w) + "]").toStdString());
     }
     return matrix[i][j];
 }
@@ -437,7 +431,7 @@ void Matrix::SetElem(double x, int i, int j)
 {
     if (i < 0 || i >= h || j < 0 || j >= w)
     {
-        throw std::runtime_error("Out of matrix bounds.");
+        throw std::runtime_error("Out of matrix bounds. [SET]");
     }
     matrix[i][j] = x;
 }
@@ -474,7 +468,7 @@ void Matrix::clear()
     {
         for (int i = 0; i < h; i++)
         {
-            delete[] matrix;
+            delete[] matrix[i];
         }
         delete[] matrix;
         w = -1;

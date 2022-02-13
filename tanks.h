@@ -4,7 +4,6 @@
 //Tanks and projectiles
 
 #include "game.h"
-#include "add_math.h"
 #include "objects.h"
 
 class graph;
@@ -79,9 +78,9 @@ public:
     void Rotate(Angle delta_angle)   //Rotating
     {
         if (delta_angle.GetD() > rot_speed)
-            delta_angle = Angle(rot_speed);
+            delta_angle = degtorad(rot_speed);
         if (delta_angle.GetD() < -rot_speed)
-            delta_angle = Angle(-rot_speed);
+            delta_angle = degtorad(-rot_speed);
         Turn(delta_angle);
     }
 
@@ -150,7 +149,7 @@ public:
 class Bullet: public BaseBullet
 {
 public:
-    Bullet(float _x, float _y, double _angle, Entity* _parent = NULL);
+    Bullet(float _x, float _y, Angle _angle, Entity* _parent = NULL);
     void Show();
     void OnStep();
 

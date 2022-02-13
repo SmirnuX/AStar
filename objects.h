@@ -1,16 +1,15 @@
 #ifndef OBJECTS_H
 #define OBJECTS_H
 
-#include "collision.h"
-#include "add_math.h"
-#include "list.h"
 #include <math.h>
-#include <QThread>
+#include "add_math.h"
 #include <QPainter>
 #include <QPixmap>
 #include <QDebug>
 #include <QColor>
 #include <QPoint>
+
+class Collider;
 
 class Point
 {
@@ -33,6 +32,11 @@ public:
     double GetX();
     double GetY();
 };
+
+double distance2(Point a, Point b);
+double distance(Point a, Point b);
+Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double c2); //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
+
 
 class Line
 {
