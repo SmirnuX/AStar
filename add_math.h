@@ -94,11 +94,14 @@ public:
     double det();   //Determinant of matrix
     Matrix getAddition(int _i, int _j);   //Get new matrix by deleting i row and j column
     Matrix inverse();   //Inverse matrix
+    Matrix inverse_without_divide();  //Inverse matrix without division by determinant
     double GetElem(int i, int j);   //Get element from i row and j column
     int GetH();
     int GetW();
     void SetElem(double x, int i, int j);
+    void Simplify();    //[!] NOT IMPLEMENTED
     void clear();
+    void print();
 
     Matrix& operator=(Matrix& mx);
     Matrix& operator+=(Matrix& mx);

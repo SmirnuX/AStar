@@ -1,4 +1,5 @@
 #include "add_math.h"
+#include <QDebug>
 
 //=== Trigonometry ===
 
@@ -426,7 +427,28 @@ Matrix Matrix::inverse()  //Inverse matrix
         }
     }
     return result;
+}
 
+Matrix Matrix::inverse_without_divide()  //Inverse matrix without division by determinant
+{
+    double _det = det();
+    if (_det == 0)
+    {
+        throw std::runtime_error("Tried to calculate inverse matrix for matrix with zero determinant.");
+    }
+    Matrix result = Matrix(h, w);
+    double sign = 1;  //Sign of minor
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            double new_elem = sign * getAddition(0, i).det();
+//            new_elem /= _det;
+            result.SetElem(new_elem, i, j);
+            sign = -sign;
+        }
+    }
+    return result;
 }
 
 double Matrix::GetElem(int i, int j)   //Get element from i row and j column
@@ -456,6 +478,11 @@ void Matrix::SetElem(double x, int i, int j)
         throw std::runtime_error("Out of matrix bounds. [SET]");
     }
     matrix[i][j] = x;
+}
+
+void Matrix::Simplify()
+{
+
 }
 
 Matrix& Matrix::operator=(Matrix& mx)
@@ -496,6 +523,21 @@ void Matrix::clear()
         w = -1;
         h = -1;
     }
+}
+
+void Matrix::print()
+{
+    QString tmp;
+    for (int i = 0; i < h; i++)
+    {
+        tmp = "";
+        for (int j = 0; j < w; j++)
+        {
+            tmp += QString::number(matrix[i][j]) + "  ";
+        }
+        qDebug() << tmp;
+    }
+    qDebug() << " ";
 }
 
 Matrix& Matrix::operator+=(Matrix& mx)

@@ -175,6 +175,7 @@ bool LineCollider::CheckCollision(LineCollider* other)       //Collision with li
     A.SetElem(line->b, 0, 1);
     A.SetElem(other->line->a, 1, 0);
     A.SetElem(other->line->b, 1, 1);
+//    A.print();
     //Checking determinant
     double _Det = A.det();
     if (almostEq(_Det, 0))
@@ -182,15 +183,30 @@ bool LineCollider::CheckCollision(LineCollider* other)       //Collision with li
         return almostEq(line->c, other->line->c) && intersect(line->GetMinX(), line->GetMaxX(),
                                                               other->line->GetMinX(), other->line->GetMaxX());   //Parallel or equal
     }
-    Matrix C(2, 1);
-    C.SetElem(-line->c, 0, 0);
-    C.SetElem(-other->line->c, 1, 0);
-    Matrix A_inv = A.inverse();
-    Matrix res = A_inv * C;
-    double res_x = res.GetElem(0, 0);
-    double res_y = res.GetElem(1, 0);
-    return (line->GetMinX() < res_x && res_x < line->GetMaxX() &&
-            line->GetMinY() < res_y && res_y < line->GetMaxY());
+    //Get two other determinants
+    A.SetElem(-line->c, 0, 0);
+    A.SetElem(-other->line->c, 1, 0);
+//    A.print();
+    double _det1 = A.det();
+    A.SetElem(line->a, 0, 0);
+    A.SetElem(other->line->a, 1, 0);
+    A.SetElem(-line->c, 0, 1);
+    A.SetElem(-other->line->c, 1, 1);
+//    A.print();
+    double _det2 = A.det();
+    double res_x = _det1 / _Det;
+    double res_y = _det2 / _Det;
+    double this_min_y = (line->GetMinY() < line->GetMaxY()) ? line->GetMinY() : line->GetMaxY();
+    double this_max_y = (line->GetMinY() > line->GetMaxY()) ? line->GetMinY() : line->GetMaxY();
+    double other_min_y = (other->line->GetMinY() < other->line->GetMaxY()) ? other->line->GetMinY() : other->line->GetMaxY();
+    double other_max_y = (other->line->GetMinY() > other->line->GetMaxY()) ? other->line->GetMinY() : other->line->GetMaxY();
+
+    qDebug() << "Intersection: " << QString::number(res_x) << " " << QString::number(res_y);
+    bool is_in_this_x = (line->GetMinX() < res_x && res_x < line->GetMaxX()) || almostEq(line->GetMinX(), res_x);
+    bool is_in_this_y = (this_min_y < res_y && res_y < this_max_y) || almostEq(line->GetMinY(), res_y);
+    bool is_in_other_x = (other->line->GetMinX() < res_x && res_x < other->line->GetMaxX()) || almostEq(other->line->GetMinX(), res_x);
+    bool is_in_other_y = (other_min_y < res_y && res_y < other_max_y) || almostEq(other->line->GetMinY(), res_y);
+    return is_in_this_x && is_in_this_y && is_in_other_x && is_in_other_y;
 }
 
 bool LineCollider::CheckCollision(CircleCollider* other)     //Collision with circle

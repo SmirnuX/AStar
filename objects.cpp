@@ -136,9 +136,9 @@ void Line::Update()  //Update line equation
         min_p = max_p;
         max_p = temp;
     }
-    a = min_p->GetY() - max_p->GetY();
-    b = max_p->GetX() - min_p->GetX();
-    c = (min_p->GetX() * max_p->GetY() - min_p->GetY() * max_p->GetX());
+    a = min_p->GetY() - max_p->GetY();  //y1-y2
+    b = max_p->GetX() - min_p->GetX();  //x2-x1
+    c = (min_p->GetX() * max_p->GetY() - min_p->GetY() * max_p->GetX());    //x1y2 - y1x2
 }
 
 void Line::Turn(Angle angle, Point &pivot)
