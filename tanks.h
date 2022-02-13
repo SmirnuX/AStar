@@ -19,7 +19,7 @@ protected:
     double tank_speed;  //Max tank speed
     double acc;         //Acceleration of tank
     double dec;         //Decceleration of tank
-    double rot_speed;   //Speed of rotating tank head
+    Angle rot_speed;   //Speed of rotating tank head
     int rel_time;       //Reload timeout
     //Base properties
     int base_width;     //Width
@@ -40,60 +40,15 @@ public:
     virtual void Shoot() = 0;
     void SetCannonAngle(Angle _angle);  //Setting angle of cannon
 
-    void Accelerate()   //Full acceleration
-    {
-        Accelerate(acc);
-    }
+    void Accelerate();   //Full acceleration
+    void Accelerate(double _acc);    //Acceleration by _acc amount
 
-    void Accelerate(double _acc)    //Acceleration by _acc amount
-    {
-        if (_acc < acc)
-        {
-            SetSpeed(GetSpeed() + _acc);
-        }
-        else
-        {
-            SetSpeed(GetSpeed() + _acc);
-        }
+    void Deccelerate();
+    void Deccelerate(double _dec);
 
-    }
-
-    void Deccelerate()
-    {
-        Deccelerate(dec);
-    }
-
-    void Deccelerate(double _dec)
-    {
-        if (_dec < dec)
-        {
-            SetSpeed(GetSpeed() - _dec);
-        }
-        else
-        {
-            SetSpeed(GetSpeed() - _dec);
-        }
-    }
-
-    void Rotate(Angle delta_angle)   //Rotating
-    {
-        if (delta_angle.GetD() > rot_speed)
-            delta_angle = degtorad(rot_speed);
-        if (delta_angle.GetD() < -rot_speed)
-            delta_angle = degtorad(-rot_speed);
-        Turn(delta_angle);
-    }
-
-    void RotateL()
-    {
-        Turn(rot_speed);
-    }
-
-    void RotateR()
-    {
-        Turn(-rot_speed);
-    }
-
+    void Rotate(Angle delta_angle);   //Rotating
+    void RotateL();
+    void RotateR();
 };
 
 class Path;
@@ -101,7 +56,7 @@ class Path;
 class Tank: public BaseTank
 {
 public:
-    Tank(float _x, float _y);
+    Tank(double _x, double _y);
     ~Tank();
 
     Path* path;
@@ -127,7 +82,7 @@ public:
 class EnemyTank: public BaseTank
 {
 public:
-    EnemyTank(float _x, float _y);
+    EnemyTank(double _x, double _y);
     ~EnemyTank();
     void Shoot();
     void OnStep();

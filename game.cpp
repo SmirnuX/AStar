@@ -137,14 +137,12 @@ bool game::event(QEvent* ev)   //Event handler
         return true;
     }
     return QWidget::event(ev);  //Skip every other event
-};
+}
 
 void game::mousePressEvent(QMouseEvent *event)    //Mouse event handler
 {
     if (event->button() == Qt::RightButton) {   //Rotating tank head
-        double mouse_angle = direction_to_point(player->GetX(), player->GetY(), event->pos().x(), -event->pos().y());   //Invert Y axis
-        if (event->pos().x() < player->GetX())
-            mouse_angle += M_PI;
+        double mouse_angle = -direction_to_point(player->GetX(), player->GetY(), event->pos().x(), event->pos().y());
         player->SetCannonAngle(Angle(mouse_angle) - player->GetAngle());
     }
     else if (event->button() == Qt::LeftButton)
@@ -268,7 +266,7 @@ void game::game_update()  //Function, called every frame
         pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
     }
     update();
-};
+}
 
 void game::player_set_path()
 {
@@ -295,7 +293,7 @@ void game::uiUpdate()   //UI update
 
     //List of entities
     Menu->tableWidget->setRowCount(stack->size);
-    Menu->tableWidget->setHorizontalHeaderItem(0, new QTableWidgetItem(QString::fromLocal8Bit("Объекты")));
+    Menu->tableWidget->setHorizontalHeaderItem(0, new QTableWidgetItem("Объекты"));
     QItemSelectionModel *select = Menu->tableWidget->selectionModel();
     int a = -1;
     if (select->selectedIndexes().size() > 0)
@@ -320,7 +318,25 @@ void game::uiUpdate()   //UI update
     }
 }
 
+Path::Path(int _num, double tx, double ty)
+{
+    num = _num;
+    x = new double[_num];
+    y = new double[_num];
+    a = new Angle[_num];
+    s = new double[_num];
+    i = 0;
+    final_x = tx;
+    final_y = ty;
+}
 
+Path::~Path()
+{
+    delete[] x;
+    delete[] y;
+    delete[] a;
+    delete[] s;
+}
 
 
 

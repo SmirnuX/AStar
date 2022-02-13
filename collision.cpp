@@ -246,14 +246,27 @@ void LineCollider::ShowCollider()
 
 void LineCollider::MoveTo(double _x, double _y)   //Move first point to (_x, _y) - second point will follow
 {
-    double dx = line->GetMinX() - line->GetMaxX();
-    double dy = line->GetMinY() - line->GetMaxY();
-    line->Set(_x, _y, _x + dx, _y + dy);
+    if (almostEq(line->GetMinX(), GetX()) && almostEq(line->GetMinY(), GetY()))
+    {
+        //If point with min x is origin
+        double dx = line->GetMaxX() - line->GetMinX();
+        double dy = line->GetMaxY() - line->GetMinY();
+        line->Set(_x, _y, _x + dx, _y + dy);
+    }
+    else
+    {
+        //If point with max x is origin
+        double dx = line->GetMinX() - line->GetMaxX();
+        double dy = line->GetMinY() - line->GetMaxY();
+        line->Set(_x - dx, _y - dy, _x, _y);
+    }
+    Point::MoveTo(_x, _y);
 }
 
 void LineCollider::Drag(double dx, double dy)
 {
     line->Set(line->GetMinX() + dx, line->GetMinY() + dy, line->GetMaxX() + dx, line->GetMaxY() + dy);
+    Point::Drag(dx, dy);
 }
 
 void LineCollider::Turn(Angle angle, Point& pivot)
@@ -261,17 +274,17 @@ void LineCollider::Turn(Angle angle, Point& pivot)
     line->Turn(angle, pivot);
 }
 
-void LineCollider::Turn(Angle angle) //Rotate relative to left point
+void LineCollider::Turn(Angle angle) //Rotate relative to origin
 {
-    Point pivot(line->GetMinX(), line->GetMinY());
+    Point pivot(GetX(), GetY());
     line->Turn(angle, pivot);
 }
 
 void LineCollider::SetAngle(Angle angle)
 {
     double length = distance(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
-    line->Set(line->GetMinX(), line->GetMinY(),
-              line->GetMinX() + length * cos(angle.GetR()), line->GetMinY() + length * sin(angle.GetR()));
+    line->Set(GetX(), GetY(),
+              GetX() + length * cos(angle.GetR()), GetY() + length * sin(angle.GetR()));
 }
 
 
@@ -340,7 +353,7 @@ void CircleCollider::ShowCollider()
         painter.setPen(QColor(0,255,0));
     else
         painter.setPen(QColor(255,0,0));
-    painter.drawEllipse(circle->GetX() - circle->GetR(), circle->GetY() - circle->GetR(), 2 * circle->GetR(), 2 * circle->GetR());
+    painter.drawEllipse(GetX() - circle->GetR(), GetY() - circle->GetR(), 2 * circle->GetR(), 2 * circle->GetR());
     collisions = 0;
 }
 

@@ -68,29 +68,13 @@ public:
     int i;
     double* x;  //Array of: coords, angles and speeds on every segment of path
     double* y;
-    double* a;
+    Angle* a;
     double* s;
     double final_x;
     double final_y;
-    Path(int _num, double tx, double ty)
-    {
-        num = _num;
-        x = new double[_num];
-        y = new double[_num];
-        a = new double[_num];
-        s = new double[_num];
-        i = 0;
-        final_x = tx;
-        final_y = ty;
-    }
+    Path(int _num, double tx, double ty);
 
-    ~Path()
-    {
-        delete[] x;
-        delete[] y;
-        delete[] a;
-        delete[] s;
-    }
+    ~Path();
 };
 
 #endif // GAME_H

@@ -19,9 +19,16 @@ Angle::Angle()  //Uninitialized angle
 
 }
 
-Angle::Angle(double rad)
+Angle::Angle(double rad, AngleMeasure meas)
 {
-    angle = rad;
+    if (meas == RADIANS)
+    {
+        angle = rad;
+    }
+    else
+    {
+        angle = degtorad(rad);
+    }
     CorrectAngle();
 }
 
@@ -98,6 +105,11 @@ Angle& Angle::operator=(double rad)
     return *this;
 }
 
+Angle Angle::operator-() const
+{
+    return Angle(-GetR());
+}
+
 //Angle::operator double() const
 //{
 //    return angle;
@@ -154,7 +166,7 @@ bool operator>(const Angle& left, const Angle& right)
 
 double direction_to_point(double from_x, double from_y, double to_x, double to_y) //Calculate driection from (from_x, from_y) to (to_x, to_y)
 {
-    double dir = safe_acos( (to_x - from_x) / sqrt(distance2(from_x, from_y, to_x, to_y)));
+    double dir = safe_acos( (to_x - from_x) / distance(from_x, from_y, to_x, to_y));
     if (to_y < from_y)
         dir = 2* M_PI - dir;
     return dir;
@@ -177,6 +189,16 @@ double anglediff(double a, double b)    //Angle difference in range from -180 to
         da -= 360;
     if (da > 180)
         da = da - 360;
+    return da;
+}
+
+double anglediff(const Angle& left, const Angle& right)    //Angle difference in range from -PI to PI
+{
+    double da = (left-right).GetR();
+    if (da > M_PI)
+    {
+        da -= 2* M_PI;
+    }
     return da;
 }
 

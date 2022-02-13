@@ -100,7 +100,7 @@ public:
         ShowCollisions->setText("Показывать столкновения");
         label->setText("Объекты");
         QTableWidgetItem *___qtablewidgetitem = tableWidget->horizontalHeaderItem(0);
-        ___qtablewidgetitem->setText("Объект");
+        ___qtablewidgetitem->setText("error");
         Control->setText("Взять под контроль");
         Search->setText("Поиск пути");
         ShowPaths->setText("Показывать пути");

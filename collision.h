@@ -50,7 +50,7 @@ class LineCollider : public Collider
 public:
     Line* line;
 
-    LineCollider(double x1, double y1, double x2, double y2);
+    LineCollider(double x1, double y1, double x2, double y2);   //First point is set as origin
     ~LineCollider();
 
     bool CheckCollision(Collider* other);           //Collision with unknown object
@@ -60,7 +60,7 @@ public:
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider();
 
-    void MoveTo(double _x, double _y);    //Move first point to (_x, _y) - second point will follow
+    void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
     void Drag(double dx, double dy);
     void Turn(Angle angle, Point& pivot);
     void Turn(Angle angle); //Rotate relative to left point

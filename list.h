@@ -5,6 +5,8 @@
 
 #include "game.h"
 
+
+
 class Entity;
 
 class EntityStackItem    //Struct for storing one entity

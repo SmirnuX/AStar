@@ -9,6 +9,8 @@
 #include <QColor>
 #include <QPoint>
 
+
+
 class Collider;
 
 class Point
@@ -77,6 +79,7 @@ public:
     Entity(float _x, float _y, Collider* _collider = NULL);
     virtual ~Entity();
     Collider* collision_mask;
+    bool ToDelete;  //True, if this entity has to be deleted on this frame
 
     virtual void Show() = 0; //Draw entity
 
@@ -84,6 +87,8 @@ public:
     void EntityUpdate();        //Function, that is called every tact. This function MUST BE NOT CHANGED.
     virtual void AutoMove();    //Movement, depending of current speed and angle (isn't implemented in this class, cause static entity should not move)
     virtual void OnStep();      //Action, that is happening every tact.
+
+    void Delete();
 
     //Movement
     void MoveTo(double _x, double _y);

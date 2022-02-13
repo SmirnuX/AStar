@@ -1,7 +1,10 @@
 #include "objects.h"
 #include "collision.h"
-
+#include "list.h"
+extern EntityStack* stack;
 extern QPixmap* picture;
+
+
 //--- Point class realization ---
 Point::Point()
 {
@@ -187,6 +190,7 @@ double Circle::GetR()
 Entity::Entity(float _x, float _y, Collider* _collider) : Point(_x, _y)
 {
     collision_mask = _collider;
+    ToDelete = false;
 }
 
 Entity::~Entity()
@@ -200,6 +204,10 @@ void Entity::EntityUpdate()  //Function, that is called every tact. This functio
 {
     OnStep();
     AutoMove();
+    if (ToDelete)
+    {
+        stack->Delete(this);
+    }
 }
 
 void Entity::AutoMove() //Movement, depending of current speed and angle (isn't implemented in this class, cause static entity should not move)
@@ -210,6 +218,11 @@ void Entity::AutoMove() //Movement, depending of current speed and angle (isn't 
 void Entity::OnStep()   //Action, that is happening every tact.
 {
     //Empty body
+}
+
+void Entity::Delete()
+{
+    ToDelete = true;
 }
 
 void Entity::MoveTo(double _x, double _y)
@@ -230,7 +243,7 @@ void Entity::Drag(double dx, double dy)
 
 QString Entity::GetName()
 {
-    return QString::fromLocal8Bit("Статический объект");
+    return "Статический объект";
 }
 
 QString Entity::GetInfo()
@@ -293,7 +306,7 @@ Angle MovingEntity::GetAngle()
 
 QString MovingEntity::GetName()
 {
-    return QString::fromLocal8Bit("Движимый объект");
+    return "Движимый объект";
 }
 
 QString MovingEntity::GetInfo() //Get coords, speed and angle
@@ -321,7 +334,7 @@ void Wall::Show()
 
 QString Wall::GetName()
 {
-    return QString::fromLocal8Bit("Стена");
+    return "Стена";
 }
 
 
@@ -343,6 +356,6 @@ void Box::Show()
 
 QString Box::GetName()
 {
-    return QString::fromLocal8Bit("Ящик");
+    return "Ящик";
 }
 
