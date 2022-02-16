@@ -91,8 +91,7 @@ void BaseTank::RotateR()
 //=== Tank class realization ===
 Tank::Tank(double _x, double _y):BaseTank(_x,_y)
 {
-    path = NULL;
-
+    path = nullptr;
     base_width = 80;
     base_length = 100;
     cannon_width = 15;
@@ -104,6 +103,7 @@ Tank::Tank(double _x, double _y):BaseTank(_x,_y)
     rot_speed = Angle(2, DEGREES);
     rel_time = 40;
     max_speed = 4;
+    friction = 0.1;
 
     //Collider
     double x_s[4] = {x + base_length/2, x + base_length/2, x - base_length/2, x - base_length/2};
@@ -124,7 +124,6 @@ Tank::~Tank()
 
 void Tank::OnStep()
 {
-    double friction = 0.1;
     //Reloading
     if (reload_timeout > 0)
         reload_timeout --;
@@ -371,125 +370,6 @@ QString EnemyTank::GetName()
     return "Вражеский танк";
 }
 
-void Tank::RideTo(Box* obstacle) //Test
-{
-    double acc = 0.3;
-    double delta_angle = 2;
-    double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
-    double tx, ty;  //Целевая точка
-    if (obstacle->GetX() < x - base_length/2 ||
-        obstacle->GetY() + obstacle->a < y - threshold ||
-        obstacle->GetY() - obstacle->a > y + threshold  )
-    {
-        if (angle != Angle(0))
-        {
-            if ((angle < delta_angle) || (angle > 360-delta_angle))
-                SetAngle(0);
-            else
-                Turn((angle < 180)?-delta_angle:delta_angle);
-        }
-
-        SetSpeed(speed + acc);
-        return;
-    }
-    tx = obstacle->GetX()-obstacle->a;
-    if (obstacle->GetY() > y)
-        ty = obstacle->GetY() + obstacle->a + threshold;
-    else
-        ty = obstacle->GetY() - obstacle->a - threshold;
-
-    double front_x = x + threshold + (speed + acc) * cos(angle.GetR());
-    if (front_x > tx)
-        SetSpeed(speed - acc);
-    else
-        SetSpeed(speed + acc);
-
-
-    front_x = x + threshold + (speed + acc) * cos(angle.GetR());
-    double ta;
-    if (fabs(tx - front_x) < threshold)
-        ta = (ty-y) > 0 ? 90 : -90;
-    else
-        ta = radtodeg( atan((ty-y)/(tx-front_x)));
-    if (angle != ta)
-    {
-        double temp_a = angle.GetD();
-        if (temp_a > 180)
-            temp_a -= 360;
-        if (fabs(ta - temp_a) < delta_angle)
-            SetAngle(ta);
-        else
-            Turn(((ta - temp_a) > 0)?delta_angle:-delta_angle);
-    }
-
-}
-
-
-void Tank::BuildPath(double tx, double ty)  //Simple path
-{
-    if (path != NULL)
-        delete path;
-    int MAX_POINTS = 600;
-    path = new Path(MAX_POINTS, tx, ty);
-    double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
-    double path_x = x;
-    double path_y = y;
-    Angle path_angle = -angle;
-    double friction = 0.1;
-    if (path_angle > 180)
-        path_angle -= 360;
-    double path_speed = speed;
-    double cosinus = cos(path_angle.GetR());
-    double sinus = sin(path_angle.GetR());
-    for (int i = 0; i < MAX_POINTS; i++)
-    {
-        double ideal_angle = radtodeg(atan( (ty-path_y)/(tx-path_x) ));
-        if (!almostEq(angle.GetD(), ideal_angle))
-        {
-            if (fabs(anglediff(ideal_angle, path_angle)) < rot_speed)
-                path_angle = ideal_angle;
-            else if (anglediff(ideal_angle, path_angle) > 0)
-                path_angle += rot_speed;
-            else
-                path_angle -= rot_speed;
-            cosinus = cos(path_angle.GetR());
-            sinus = sin(path_angle.GetR());
-        }
-        double acc_dist = distance2(path_x + (path_speed + acc - friction)*cosinus, path_y + (path_speed + acc - friction)* sinus, tx, ty);
-        double dec_dist = distance2(path_x + (path_speed - dec + friction)*cosinus, path_y + (path_speed - dec + friction) * sinus, tx, ty);
-        double nop_dist = distance2(path_x + (path_speed - friction)*cosinus, path_y + (path_speed - friction)* sinus, tx, ty);
-
-        if (acc_dist < dec_dist && acc_dist < nop_dist)
-            path_speed += acc;
-        else if (dec_dist < nop_dist)
-            path_speed -= dec;
-        if (path_speed > max_speed)
-            path_speed = max_speed;
-        else if (path_speed < -max_speed)
-            path_speed = -max_speed;
-        path->a[i] = path_angle;
-        path->s[i] = path_speed;
-
-        if (path_speed > 0)
-        {
-            path_speed -= friction;
-            if (path_speed < 0)
-                path_speed = 0;
-        }
-        else if (path_speed < 0)
-        {
-            path_speed += friction;
-            if (path_speed > 0)
-                path_speed = 0;
-        }
-
-        path_x += path_speed*cosinus;
-        path_y += path_speed*sinus;
-        path->x[i] = path_x;
-        path->y[i] = path_y;
-    }
-
-}
 
 void Tank::ShowPath()   //Drawing path
 {
@@ -499,6 +379,7 @@ void Tank::ShowPath()   //Drawing path
     QPen penn;
     penn.setWidth(3);
     bool color = false;
+    pntr.drawEllipse(path->x[path->i] - 4, path->y[path->i] - 4, 8, 8);
     for (int i = 0; i < path->num - 1; i++)
     {
         if (color)
@@ -511,7 +392,7 @@ void Tank::ShowPath()   //Drawing path
     }
 }
 
-void Tank::FollowPath()
+void Tank::FollowPath() //Actually follow built path
 {
     if (path == NULL)
         return;
@@ -519,110 +400,28 @@ void Tank::FollowPath()
         Accelerate(path->s[path->i] - speed);
     else
         Deccelerate(speed - path->s[path->i]);
-    if (fabs(anglediff(- path->a[path->i], angle.GetD())) < rot_speed)
-        SetAngle(- path->a[path->i]);
-    else if (anglediff(- path->a[path->i], angle.GetD()) > 0)
-        Turn(rot_speed);
-    else
-        Turn(-rot_speed);
+    //Tank angle - clockwise, nut path angle - counter clockwise
+    qDebug() << anglediff(-path->a[path->i], angle);
+    if (fabs(anglediff(-path->a[path->i], angle)) < rot_speed)   //If difference between target and current angles can be solved by one frsme
+        SetAngle(-path->a[path->i]);
+    else if (fabs(anglediff(-path->a[path->i], angle)) > EPSILON)  //If there is difference, but it can't be solved in moment
+    {
+        if (angle > -path->a[path->i])
+            Turn(-rot_speed);
+        else
+            Turn(rot_speed);
+    }
     path->i++;
     if (path->i == path->num || (almostEq(x, path->final_x, 2) && almostEq(y, path->final_y, 2)))
     {
         delete path;
-        path = NULL;
+        path = nullptr;
     }
 }
 
 QString Tank::GetName()
 {
     return "Танк";
-}
-
-void Tank::BuildPath(double tx, double ty, Box* obstacle)
-{
-    if (path != NULL)
-        delete path;
-    int MAX_POINTS = 600;
-    path = new Path(MAX_POINTS, tx, ty);
-    double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
-    double side = 2 * obstacle->a * 0.8;
-    double path_x = x;
-    double path_y = y;
-    Angle path_angle = -angle;
-    double friction = 0.1;
-    if (path_angle > 180)
-        path_angle -= 360;
-    double path_speed = speed;
-    double cosinus = cos(path_angle.GetR());
-    double sinus = sin(path_angle.GetR());
-    double temp_x = tx;
-    double temp_y = ty;
-    for (int i = 0; i < MAX_POINTS; i++)
-    {
-        CircleCollider circ(obstacle->GetX(), obstacle->GetY(), side + threshold);
-        LineCollider line(path_x, path_y, tx, ty);
-        if (line.CheckCollision(&circ))
-        {
-            double normal_x = -(ty - path_y);
-            double normal_y = tx - path_x;
-            double dist = sqrt(distance2(tx, ty, path_x, path_y));
-            normal_x /= dist;
-            normal_y /= dist;
-            normal_x *= (side + threshold);
-            normal_y *= (side + threshold);
-            temp_x = obstacle->GetX() + normal_x;
-            temp_y = obstacle->GetY() + normal_y;
-        }
-        else
-        {
-            temp_x = tx;
-            temp_y = ty;
-        }
-        double ideal_angle = radtodeg(atan( (temp_y-path_y)/(temp_x-path_x) ));
-        if (!almostEq(path_angle.GetD(), ideal_angle))
-        {
-            if (fabs(anglediff(ideal_angle, path_angle)) < rot_speed)
-                path_angle = ideal_angle;
-            else if (anglediff(ideal_angle, path_angle) > 0)
-                path_angle += rot_speed;
-            else
-                path_angle -= rot_speed;
-            cosinus = cos(path_angle.GetR());
-            sinus = sin(path_angle.GetR());
-        }
-        double acc_dist = distance2(path_x + (path_speed + acc - friction)*cosinus, path_y + (path_speed + acc - friction)* sinus, temp_x, temp_y);
-        double dec_dist = distance2(path_x + (path_speed - dec + friction)*cosinus, path_y + (path_speed - dec + friction) * sinus, temp_x, temp_y);
-        double nop_dist = distance2(path_x + (path_speed - friction)*cosinus, path_y + (path_speed - friction)* sinus, temp_x, temp_y);
-
-        if (acc_dist < dec_dist && acc_dist < nop_dist)
-            path_speed += acc;
-        else if (dec_dist < nop_dist)
-            path_speed -= dec;
-        if (path_speed > max_speed)
-            path_speed = max_speed;
-        else if (path_speed < -max_speed)
-            path_speed = -max_speed;
-        path->a[i] = path_angle;
-        path->s[i] = path_speed;
-
-        if (path_speed > 0)
-        {
-            path_speed -= friction;
-            if (path_speed < 0)
-                path_speed = 0;
-        }
-        else if (path_speed < 0)
-        {
-            path_speed += friction;
-            if (path_speed > 0)
-                path_speed = 0;
-        }
-
-        path_x += path_speed*cosinus;
-        path_y += path_speed*sinus;
-        path->x[i] = path_x;
-        path->y[i] = path_y;
-    }
 }
 
 

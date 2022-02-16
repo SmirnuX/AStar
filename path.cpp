@@ -1,10 +1,10 @@
 #include "tanks.h"
 extern EntityStack* stack;
 
-std::vector<edge> get_path_from_graph(graph *gr, uint _start = 0, uint _end = 1)  //Getting path from graph
+std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
 {
-    vertex* start = gr->vertices[_start];
-    vertex* end = gr->vertices[_end];
+    vertex* start = gr->vertices[gr->start];
+    vertex* end = gr->vertices[gr->end];
     vertex* curr = start;
     vertex* prev = nullptr;
 
@@ -52,6 +52,7 @@ std::vector<edge> get_path_from_graph(graph *gr, uint _start = 0, uint _end = 1)
                     temp_edge.cx = gr->edges[i].cx;
                     temp_edge.cy = gr->edges[i].cy;
                 }
+                temp_edge.length = gr->edges[i].length;
                 prev = curr;
                 curr = adj;
                 result.push_back(temp_edge);
@@ -64,6 +65,8 @@ std::vector<edge> get_path_from_graph(graph *gr, uint _start = 0, uint _end = 1)
 
 void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical properties
 {
+    QTextStream log_str(path_log);
+    log_str<<"   ===   ПОСТРОЕНИЕ ПУТИ   ===\n";
     if (gr == nullptr)
         return;
     if (!gr->IsWay())
@@ -74,14 +77,9 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
     //Next point of the path
     double path_x = x;
     double path_y = y;
-    Angle path_angle(-angle.GetD());    //Target angle at next point
-    double path_speed = speed;          //Target speed at next point
+    Angle path_angle(angle);    //Target angle at next point
+    double path_speed = speed;  //Target speed at next point
     path = new Path(MAX_POINTS, gr->vertices[target]->point->GetX(), gr->vertices[target]->point->GetY());
-
-    //Variables for arcs
-    Angle start_angle;
-    Angle end_angle;
-    Point center = Point(0,0);
 
     //1. Searching for path in graph
     std::vector<edge> temp_path = get_path_from_graph(gr);
@@ -94,43 +92,44 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
     {
         double length;
         //Length of path between two pints
-        if (temp_path[i].type == LINEAR)
-            length = distance(temp_path[i].A, temp_path[i].B);
-        else
-            length = fabs(temp_path[i].rA * anglediff(temp_path[i].aB, temp_path[i].aA));
+        length = temp_path[i].length;
         //Calculating max speed for this segment
         double max_spd;
         if (i == 0) //Start speed
             max_spd = speed;
         else
         {
-            if (temp_path[i].type == ARC_ELLIPSE)
+            if (temp_path[i].type == ARC_CIRCLE)
             {
-                max_spd = 2 * temp_path[i].rA * cos(rot_speed.GetR()/2); //V = 2 * R * cos (max_rot / 2)
+                max_spd = 2 * temp_path[i].rA * sin(rot_speed.GetR()/2); //V = 2 * R * sin (max_rot / 2) - max speed you can stay on arc with
             }
-            else if (temp_path[i-1].type == ARC_ELLIPSE)
+            else if (temp_path[i-1].type == ARC_CIRCLE)
             {
-                max_spd = 2 * temp_path[i-1].rA * cos(rot_speed.GetR()/2);
+                max_spd = 2 * temp_path[i-1].rA * sin(rot_speed.GetR()/2);
             }
             else
-                max_spd = max_speed;
+                max_spd = max_speed;    //Should never happen
             if (max_spd > max_speed)
                 max_spd = max_speed;
         }
+        log_str << i+1 << "\tMAXSPD:\t" << max_spd;
+
         //Check if there is possibility to achieve that speed
         double acc_path;
         if (max_spd > temp_speeds[i+2]) //If next speed lower then current
-            acc_path = (max_spd * max_spd - temp_speeds[i+2] * temp_speeds[i+2]) / (2 * dec);
+            acc_path = (max_spd * max_spd - temp_speeds[i+2] * temp_speeds[i+2]) / (2 * (dec + friction));
         else
-            acc_path = (max_spd * max_spd - temp_speeds[i+2] * temp_speeds[i+2]) / (2 * acc);
+            acc_path = (temp_speeds[i+2] * temp_speeds[i+2] - max_spd * max_spd) / (2 * (acc - friction));
         if (acc_path > length)  //If object can't break/accelerate enough
         {
             if (max_spd > temp_speeds[i+1]) //Changing speed to achievable
-                max_spd = sqrt(fabs(2 * dec * length - temp_speeds[i+2] * temp_speeds[i+2]));
+                max_spd = sqrt(fabs(temp_speeds[i+2] * temp_speeds[i+2] - 2*(dec + friction) * length));  //V0 = sqrt (V^2 - 2aS)
             else
-                max_spd = sqrt(fabs(2 * acc * length - temp_speeds[i+2] * temp_speeds[i+2]));
+                max_spd = sqrt(fabs(temp_speeds[i+2] * temp_speeds[i+2] - 2*(acc - friction) * length));
         }
-        temp_speeds[i+1] = max_speed;
+        temp_speeds[i+1] = max_spd;
+        log_str << i+1 << "\tACTSPD:\t" << max_spd << "\n" <<
+                   "\tACCPATH:\t" << acc_path << "\tLENGTH\t" << length << '\n';
     }
 
     //3. PAth building (and correcting speeds)
@@ -141,16 +140,20 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         if (curr.type == ARC_CIRCLE)  //Arc traversal
         {
             //Acceleration to max possible speed
-            if (path_speed < temp_speeds[path_i+2])
+            if (path_speed < temp_speeds[path_i+1] - EPSILON)
             {
-                path_speed += acc;
-                if (path_speed > temp_speeds[path_i+2])
-                    path_speed = temp_speeds[path_i+2];
+                path_speed += acc - friction;
+                if (path_speed > temp_speeds[path_i+1])
+                    path_speed = temp_speeds[path_i+1];
+            }
+            else if (path_speed > temp_speeds[path_i+1] + EPSILON)  //Or braking
+            {
+                path_speed -= dec + friction;
+                if (path_speed < temp_speeds[path_i+1])
+                    path_speed = temp_speeds[path_i+1];
             }
             //Rotation
-            double linear_diff = sqrt((curr.rA + 5)*(curr.rA + 5) + path_speed*path_speed) - curr.rA - 5;   //d = \/(R^2 + PS^2) - R
-            double ratio = linear_diff / path_speed;
-            double rotation = safe_asin(ratio);   //
+            double angle_diff = 2 * safe_asin(path_speed / (2 * curr.rA));  //alpha = 2 * asin(L/2R) - difference between current angle on circle and next
             Angle start, end;
             start = curr.aA;
             end = curr.aB;
@@ -212,10 +215,12 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         //Adding new path point
         path_x += path_speed * cos(path_angle.GetR());
         path_y += path_speed * sin(path_angle.GetR());
-        path->a[i] = path_angle.GetR();
+        path->a[i] = path_angle;
         path->s[i] = path_speed;
         path->x[i] = path_x;
         path->y[i] = path_y;
+        log_str << i << "\t" << path_angle.GetD() << "d\t" << path_speed <<
+                   "\t x = " << path_x << "\t y = " << path_y << "\n";
         if (path_i >= vertex_count) //End of path
         {
             path->num = i+1;

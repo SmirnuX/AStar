@@ -45,7 +45,7 @@ public:
         Menu->setGeometry(QRect(0, 0, 231, 607));
         Menu->setFrameShape(QFrame::Panel);
         Menu->setStyleSheet("");
-        Menu->setStyleSheet("background-color: rgb(160,160,160)");
+        Menu->setStyleSheet("background-color: rgb(230,230,230)");
         //Menu = new QWidget(widget);
         //Menu->setObjectName(QString::fromUtf8("Menu"));
         Pause = new QPushButton(Menu);

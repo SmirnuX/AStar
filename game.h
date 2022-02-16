@@ -8,6 +8,8 @@
 #include <QKeyEvent>
 #include <QTime>
 #include <QTimer>
+#include <QFile>
+#include <QTextStream>
 #include <queue>
 #include <vector>
 #include <algorithm>
@@ -18,7 +20,7 @@
 #include "list.h"
 #include "add_math.h"
 
-
+extern QFile* path_log;
 
 extern QPixmap* picture;
 extern bool SHOW_COLLIDERS;
@@ -32,7 +34,7 @@ class game : public QMainWindow //Main window
 private:
     int width;  //Window width
     int height; //Height width
-    bool key[6];    //Input buffer
+    bool key[7];    //Input buffer
     graph* path_graph;
     EntityStack *visible;
     int target_x;
@@ -58,7 +60,6 @@ public:
     int GetH();
 public slots:
     void game_update(); //One tact of game
-    void player_set_path();
 };
 
 class Path

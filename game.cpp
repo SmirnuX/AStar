@@ -2,10 +2,15 @@
 extern QPixmap* picture;
 extern EntityStack* stack;
 
+
 //=== Game class realization ===
 game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     : QMainWindow(parent)
 {
+    //Debug log for path
+    path_log = new QFile("path_log.txt");
+    path_log->open(QFile::Append | QFile::Text);
+
     target_x = 0;
     target_y = 0;
     SHOW_COLLIDERS = true;
@@ -19,7 +24,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     width = w;
     height = h;
     resize(width, height);
-    for(int i=0;i<6;i++)    //Input buffer
+    for(int i=0;i<7;i++)    //Input buffer
         key[i]=false;
     //Tank creation
     player = new Tank(500, 500);
@@ -45,7 +50,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
     timer->start(15);
-    player->BuildPath(0, 0);
+//    player->BuildPath(0, 0);
     path_graph = new graph();
 
     uiUpdate();
@@ -88,6 +93,9 @@ bool game::event(QEvent* ev)   //Event handler
             break;
         case Qt::Key_Control:
             key[5]=true;
+            break;
+        case Qt::Key_Shift:
+            key[6]=true;
             break;
         case Qt::Key_F1:
             {
@@ -133,6 +141,9 @@ bool game::event(QEvent* ev)   //Event handler
         case Qt::Key_Control:
             key[5]=false;
             break;
+        case Qt::Key_Shift:
+            key[6]=false;
+            break;
         }
         return true;
     }
@@ -170,6 +181,7 @@ void game::paintEvent(QPaintEvent *) //Drawing buffer content
 void game::game_update()  //Function, called every frame
 {
     bool toBuild = false;
+    bool follow = false;
     picture->fill();    //Clearing buffer
 
     //Player control
@@ -193,11 +205,15 @@ void game::game_update()  //Function, called every frame
     {
         player->Shoot();
     }
-    if (key[5]) //[CTRL] - riding over object
+    if (key[5]) //[CTRL] - building path
     {
         //player->RideTo(box);
         //player->FollowPath();
         toBuild = true;
+    }
+    if (key[6]) //[SHIFT] - following path
+    {
+        follow = true;
     }
 
     for (stack->Reset(); stack->current != NULL; stack->Next()) //Updating of every entity
@@ -246,16 +262,19 @@ void game::game_update()  //Function, called every frame
             i++;
         }
 
-        path_graph = build_graph(obst, visible->size+2);    //Showing graph
+        path_graph = build_graph(obst, visible->size+2);
         path_graph->AStar();
         player->graph_to_path(path_graph);
-        player->FollowPath();
 
         for(int i = 0; i < visible->size+2; i++)
         {
             delete obst[i].point;
         }
         delete[] obst;
+    }
+    if (follow)
+    {
+        player->FollowPath();
     }
 
     //Showing menu
@@ -273,12 +292,6 @@ void game::game_update()  //Function, called every frame
     }
     update();
 }
-
-void game::player_set_path()
-{
-    player->BuildPath(target_x, target_y, box);
-}
-
 
 //Getters
 int game::GetW()

@@ -3,6 +3,7 @@
 //-------Global variables-------
 QPixmap* picture;   //Imgae buffer
 EntityStack* stack;
+QFile* path_log;
 bool SHOW_COLLIDERS;    //Show collision masks
 
 int main(int argc, char *argv[])

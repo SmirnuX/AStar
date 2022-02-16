@@ -19,6 +19,7 @@ protected:
     double tank_speed;  //Max tank speed
     double acc;         //Acceleration of tank
     double dec;         //Decceleration of tank
+    double friction;    //Friction on tank
     Angle rot_speed;   //Speed of rotating tank head
     int rel_time;       //Reload timeout
     //Base properties
