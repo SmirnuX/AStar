@@ -3,6 +3,7 @@
 
 #define MAX_TEMP_EDGES 4
 #define MAX_TEMP_VERTS 8
+constexpr uint MAX_PATH_COST = 1000000;
 
 #include "objects.h"
 #include "collision.h"
@@ -72,7 +73,9 @@ public:
     graph();
     void clear();
     ~graph();
-    void AStar(uint _start = 0, uint _end = 1);
+    void AStar();
+    int start;  //Indices of start and end points in vector
+    int end;
     bool IsWay();
     void Show();
 
@@ -87,7 +90,7 @@ struct temp_edges
 
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle = Angle(0));
 vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle = Angle(0));
-graph* build_graph(obstacle* objects, int count);
+graph* build_graph(obstacle* objects, int count,  uint _start=0, uint _end=1);
 
 struct temp_edges get_edges_point_to_point(struct vertex** verts, struct edge* edges,
                                            struct obstacle* A, struct obstacle* B);  //Add line from point A to point B

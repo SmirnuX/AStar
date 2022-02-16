@@ -21,6 +21,8 @@ bool fnctor::operator() (graph_cmp const& lhs, graph_cmp const& rhs)   //Priorit
 graph::graph()
 {
     found_way = false;
+    start = -1;
+    end = -1;
 }
 
 bool graph::IsWay()
@@ -57,22 +59,26 @@ vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle)    //Vertex creatio
     return res;
 }
 
-graph* build_graph(obstacle* objects, int count) //Building graph
+graph* build_graph(obstacle* objects, int count, uint _start, uint  _end) //Building graph
 {
     graph* result = new graph();
+    bool targets = false;
+    //Adding obstacles
     for (int i = 0; i < count; i++) //Getting all connections between all obstacles
     {
         for (int j = i+1; j < count; j++)
         {
-            obstacle* A = objects + i;
-            obstacle* B = objects + j;
-
             struct edge temp_edges[MAX_TEMP_EDGES];
             struct vertex* temp_verts[MAX_TEMP_VERTS];
             struct temp_edges temp_count;
-            if (A->shape == POINT && B->shape == POINT) //Point-Point - only one line
+
+            obstacle* A = objects + i;
+            obstacle* B = objects + j;
+            if (A->shape == POINT && B->shape == POINT) //Point-Point - only one line. Should be called once
             {
                 temp_count = get_edges_point_to_point(temp_verts, temp_edges, A, B);
+                if (!targets && result->start == -1)
+                    targets = true;
             }
             else if (A->shape == CIRCLE && B->shape == CIRCLE)  //Circle-Circle - 0, 2 or 4 lines
             {
@@ -85,7 +91,7 @@ graph* build_graph(obstacle* objects, int count) //Building graph
             //Intersection check and vertice merging
             for (int k = 0; k < temp_count.temp_edges_count; k++)
             {
-                bool end = false;
+                bool inter = false;
                 LineCollider lin(temp_edges[k].pA->point->GetX(),
                              temp_edges[k].pA->point->GetY(),
                              temp_edges[k].pB->point->GetX(),
@@ -99,18 +105,20 @@ graph* build_graph(obstacle* objects, int count) //Building graph
                                        objects[z].rA);
                     if (lin.CheckCollision(&crc))
                     {
-                        end = true;
+                        inter = true;
                         break;
                     }
                 }
-                if (end)    //If there was intersection
+                if (inter && !targets)    //Don't add intersected edges (and their vertices)
                     continue;
                 //Merge vertices
                 double eps = 4; //Radius of merging
-                bool first = true;
+                bool first = true;  //Is first vertex edge not merged yet
                 bool sec = true;
                 for (unsigned int z = 0; z < result->vertices.size(); z++) //Z^3-4
                 {
+                    if (targets)    //Skip merging for start and end points
+                        break;
                     if (first)
                     {
                         if (almostEq(result->vertices[z]->point->GetX(), temp_edges[k].pA->point->GetX(), eps) &&
@@ -133,7 +141,25 @@ graph* build_graph(obstacle* objects, int count) //Building graph
                     }
 
                 }
-                result->edges.push_back(temp_edges[k]);
+                if (!inter)   //Don't add intersected line from start and end points
+                    result->edges.push_back(temp_edges[k]);
+                if (targets)    //Adding start and end points
+                {
+                    result->start = result->vertices.size();
+                    result->end = result->vertices.size() + 1;
+                    if (i == _start)
+                    {
+                        result->vertices.push_back(temp_edges[k].pA);
+                        result->vertices.push_back(temp_edges[k].pB);
+                    }
+                    else
+                    {
+                        result->vertices.push_back(temp_edges[k].pB);
+                        result->vertices.push_back(temp_edges[k].pA);
+                    }
+                    targets = false;
+                    continue;
+                }
                 if (first)  //If there was no merge, push new vertices
                 {
                     result->vertices.push_back(temp_edges[k].pA);
@@ -221,7 +247,7 @@ graph* build_graph(obstacle* objects, int count) //Building graph
             if (brothers[next]->angle.GetR() < brothers[j]->angle.GetR())
                 arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.rA;
             else
-                arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.rA;
+                arc.length = fabs((brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.rA);
             result->edges.push_back(arc);
         }
         //Clearing
@@ -230,33 +256,33 @@ graph* build_graph(obstacle* objects, int count) //Building graph
     return result;
 }
 
-void graph::AStar(uint _start, uint _end) //Pathfinding
+void graph::AStar() //Pathfinding
 {
     for (unsigned int i = 0; i < edges.size(); i++)   //Clear previous path
         edges[i].chosen = false;
-    vertex* start = vertices[_start];
-    vertex* end = vertices[_end];
-    start->dist = 0;
-    start->cost = 0;
-    end->dist = 0;
-    end->cost = 0;
+    vertex* v_start = vertices[start];
+    vertex* v_end = vertices[end];
+    v_start->dist = 0;
+    v_start->cost = 0;
+    v_end->dist = 0;
+    v_end->cost = 0;
     bool running = true;
     std::vector<vertex*> closed;
     std::priority_queue<graph_cmp, std::vector<graph_cmp>, fnctor> open;
 
-    for (unsigned int i = 0; i < vertices.size(); i++)   //Marking vertices as open and
+    for (unsigned int i = 0; i < vertices.size(); i++)   //Marking vertices as open
     {
-        if (i == _start || i == _end)
+        if (i == start || i == end)
         {
             continue;
         }
         else
         {
-            vertices[i]->dist = distance(*(vertices[i]->point), *(end->point));
-            vertices[i]->cost = 100000;
+            vertices[i]->dist = distance(*(vertices[i]->point), *(v_end->point));
+            vertices[i]->cost = MAX_PATH_COST;
         }
     }
-    open.push(graph_cmp(start));
+    open.push(graph_cmp(v_start));
     while (running)
     {
         if (open.empty())
@@ -277,37 +303,26 @@ void graph::AStar(uint _start, uint _end) //Pathfinding
                 adj = edges[i].pA;
             else
                 continue;   //If this vertex is not adjacent
-            if (adj == end) //ACCEPTING FIRST WAY - MAY BE NOT BEST
+            if (adj == v_end) //ACCEPTING FIRST WAY - MAY BE NOT BEST
             {
                 edges[i].chosen = true;
+                edges[i].passed = true;
                 running = false;
                 break;
             }
             if (std::find(closed.begin(), closed.end(), adj) != closed.end())   //Is this vertex already in closed
                 continue;
-            /*bool found = false;
-            for (int j = 0; j < open.size(); j++)   //Search in open vertices?
-            {
-                if (open[j].ptr == adj)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (found)
-                continue;*/
             //Cost update
             if (adj->cost > curr->cost + edges[i].length + adj->dist)
                 adj->cost = curr->cost + edges[i].length + adj->dist;
             edges[i].passed = true;
-            //tree.push_back(edges[i]);
             open.push(graph_cmp(adj));
         }
         closed.push_back(curr);
     }
     //Pathfinding
     running = true;
-    vertex* back_curr = end;
+    vertex* back_curr = v_end;  //Current node in backward traversal
     double sum_cost = 0;
     while (running)
     {
@@ -317,20 +332,22 @@ void graph::AStar(uint _start, uint _end) //Pathfinding
             qDebug()<<"ERROR - found there is the way, but can't calculate it";
             return;
         }
-        double min_cost = 10000;
+        double min_cost = MAX_PATH_COST+1;
         int min_n;
         double min_dist;
-        vertex* min_vert;
+        vertex* min_vert = nullptr;
+        vertex* back_adj;   //Adjacent vertex in backward traversal
         for (unsigned int i = 0; i < edges.size(); i++)
         {
-            vertex* back_adj;
+            if (!edges[i].passed)
+                continue;
             if (edges[i].pA == back_curr)
                 back_adj = edges[i].pB;
             else if (edges[i].pB == back_curr)
                 back_adj = edges[i].pA;
             else
                 continue;   //If this vertex is not adjacent
-            if (std::find(closed.begin(), closed.end(), back_adj) == closed.end())   //If vertex was not passed
+            if (std::find(closed.begin(), closed.end(), back_adj) == closed.end() && closed.back() != back_adj)   //If vertex was not passed
                 continue;
             if (back_adj->cost < min_cost)  //Looking for cheapest edge
             {
@@ -340,11 +357,18 @@ void graph::AStar(uint _start, uint _end) //Pathfinding
                 min_vert = back_adj;
             }
         }
+        if (min_vert == nullptr)
+        {
+            throw std::runtime_error("Can't find way");
+        }
+        auto back_curr_v = std::find(closed.begin(), closed.end(), back_curr);
+        if (!(back_curr_v == closed.end() && closed.back() != back_curr))
+            closed.erase(back_curr_v);
         sum_cost += min_dist;
         back_curr = min_vert;
-        closed.erase(std::find(closed.begin(), closed.end(), back_curr));
+
         edges[min_n].chosen = true;
-        if (back_curr == start)
+        if (back_curr == v_start)
         {
             found_way = true;
             qDebug()<<"PATH LENGTH:" << sum_cost;

@@ -250,6 +250,12 @@ void game::game_update()  //Function, called every frame
         path_graph->AStar();
         player->graph_to_path(path_graph);
         player->FollowPath();
+
+        for(int i = 0; i < visible->size+2; i++)
+        {
+            delete obst[i].point;
+        }
+        delete[] obst;
     }
 
     //Showing menu
