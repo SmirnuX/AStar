@@ -30,16 +30,16 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     stack = new EntityStack();
     stack->Add((Entity*) player);
     stack->Add((Entity*) new Wall(1200, 500));
-//    stack->Add((Entity*) new EnemyTank(200, 200));   //Enemy tank
+    stack->Add((Entity*) new EnemyTank(200, 200));   //Enemy tank
 
-//    stack->Add((Entity*) box);      //Obstacles
-//    stack->Add((Entity*) box1);
-//    stack->Add((Entity*) box2);
+    stack->Add((Entity*) box);      //Obstacles
+    stack->Add((Entity*) box1);
+    stack->Add((Entity*) box2);
     //Visible obstacles
     visible = new EntityStack();
-//    visible->Add((Entity*) box);
-//    visible->Add((Entity*) box1);
-//    visible->Add((Entity*) box2);
+    visible->Add((Entity*) box);
+    visible->Add((Entity*) box1);
+    visible->Add((Entity*) box2);
 
     //Updating this every 15ms
     timer = new QTimer(this);

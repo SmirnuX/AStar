@@ -96,13 +96,17 @@ Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double
     {
         return nullptr;
     }
-    Matrix C(2, 1);
-    C.SetElem(-c1, 0, 0);
-    C.SetElem(-c2, 1, 0);
-    Matrix A_inv = A.inverse();
-    Matrix res = A_inv * C;
-    double res_x = res.GetElem(0, 0);
-    double res_y = res.GetElem(1, 0);
+    //Get two other determinants
+    A.SetElem(-c1, 0, 0);
+    A.SetElem(-c2, 1, 0);
+    double _det1 = A.det();
+    A.SetElem(a1, 0, 0);
+    A.SetElem(a2, 1, 0);
+    A.SetElem(-c1, 0, 1);
+    A.SetElem(-c2, 1, 1);;
+    double _det2 = A.det();
+    double res_x = _det1 / _Det;
+    double res_y = _det2 / _Det;
     return new Point(res_x, res_y);
 }
 

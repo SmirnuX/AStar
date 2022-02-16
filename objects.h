@@ -37,7 +37,7 @@ public:
 
 double distance2(Point a, Point b);
 double distance(Point a, Point b);
-Point* intersect2d(double a1, double b1, double c1, double a2, double b2, double c2); //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
+Point *intersect2d(double a1, double b1, double c1, double a2, double b2, double c2); //Point where lines intersect (or nullptr if there isn't one or several. Additional check is to compare c1 and c2)
 
 
 class Line

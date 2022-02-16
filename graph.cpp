@@ -265,7 +265,7 @@ void graph::AStar(uint _start, uint _end) //Pathfinding
             found_way = false;
             return;
         }
-        vertex* curr = open.top().ptr;  //Choosing certex with lowest cost
+        vertex* curr = open.top().ptr;  //Choosing vertex with lowest cost
         open.pop();
         //Adding open vertices
         for (unsigned int i = 0; i < edges.size(); i++)

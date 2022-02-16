@@ -170,7 +170,9 @@ void Tank::Shoot()
 {
     if (reload_timeout == 0)
     {
-        Entity* bullet = new Bullet(x, y, cannon_angle + angle, this);
+        double tower_x = x + cos((angle + M_PI).GetR()) * cannon_length * 0.3;
+        double tower_y = y - sin((angle + M_PI).GetR()) * cannon_length * 0.3;
+        Entity* bullet = new Bullet(tower_x, tower_y, cannon_angle + angle, this);
         stack->Add(bullet);
         reload_timeout = rel_time;
     }

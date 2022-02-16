@@ -201,7 +201,6 @@ bool LineCollider::CheckCollision(LineCollider* other)       //Collision with li
     double other_min_y = (other->line->GetMinY() < other->line->GetMaxY()) ? other->line->GetMinY() : other->line->GetMaxY();
     double other_max_y = (other->line->GetMinY() > other->line->GetMaxY()) ? other->line->GetMinY() : other->line->GetMaxY();
 
-    qDebug() << "Intersection: " << QString::number(res_x) << " " << QString::number(res_y);
     bool is_in_this_x = (line->GetMinX() < res_x && res_x < line->GetMaxX()) || almostEq(line->GetMinX(), res_x);
     bool is_in_this_y = (this_min_y < res_y && res_y < this_max_y) || almostEq(line->GetMinY(), res_y);
     bool is_in_other_x = (other->line->GetMinX() < res_x && res_x < other->line->GetMaxX()) || almostEq(other->line->GetMinX(), res_x);
@@ -224,7 +223,11 @@ bool LineCollider::CheckCollision(CircleCollider* other)     //Collision with ci
     {
         throw std::runtime_error("Unexpected error. Somehow line and its normal do not intersect");
     }
+    if (!intersect(line->GetMinX(), line->GetMaxX(), nearest_pt->GetX(), nearest_pt->GetX()) ||
+        !intersect(line->GetMinY(), line->GetMaxY(), nearest_pt->GetY(), nearest_pt->GetY()) )
+        return false;
     double dist = distance2(nearest_pt->GetX(), nearest_pt->GetY(), other->GetX(), other->GetY());
+    delete nearest_pt;
     return (dist < other->circle->GetR() * other->circle->GetR());
 }
 
@@ -339,7 +342,7 @@ bool CircleCollider::CheckCollision(CircleCollider* other)    //Collision with c
 bool CircleCollider::CheckCollision(PolygonCollider* other)            //Collision with polygon
 {
     //Is center of circle inside of polygon
-    PointCollider point_c(circle->GetX(), circle->GetY());
+    PointCollider point_c(GetX(), GetY());
     if(point_c.CheckCollision(other))
         return true;
 

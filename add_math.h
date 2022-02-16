@@ -76,7 +76,7 @@ double distance(double ax, double ay, double bx, double by);  //Distance between
 
 double sign(double a);  //1 if a >=0, -1 if a<0
 bool almostEq(double a, double b, double eps = EPSILON);  //Are delta between a and b lesser then eps
-bool intersect(double a1, double a2, double b1, double b2); //Does (a1,a2) and (b1, b2) intersect.
+bool intersect(double a1, double a2, double b1, double b2, double eps = EPSILON); //Does (a1,a2) and (b1, b2) intersect.
 
 void DrawTurnedRect(QPainter* painter, double x, double y, Angle angle, double width, double height);
 

@@ -267,7 +267,7 @@ bool almostEq(double a, double b, double eps)  //Are delta between a and b lesse
         return false;
 }
 
-bool intersect(double a1, double a2, double b1, double b2) //Does (a1,a2) and (b1, b2) intersect.
+bool intersect(double a1, double a2, double b1, double b2, double eps) //Does (a1,a2) and (b1, b2) intersect.
 {
     double min_a, max_a, min_b, max_b;
     if (a1 < a2)
@@ -292,8 +292,8 @@ bool intersect(double a1, double a2, double b1, double b2) //Does (a1,a2) and (b
         max_b = b1;
     }
 
-    double max_of_min = (min_a > min_b) ? min_a : min_b;
-    double min_of_max = (max_a < max_b) ? max_a : max_b;
+    double max_of_min = (min_a - eps > min_b - eps) ? min_a - eps : min_b- eps;
+    double min_of_max = (max_a + eps < max_b + eps) ? max_a + eps : max_b + eps;
 
     return max_of_min < min_of_max;
 }

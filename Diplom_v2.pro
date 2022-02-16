@@ -35,7 +35,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
-    Diplom_v2.pro.user \
     TODO_list
 
 STATECHARTS += \
