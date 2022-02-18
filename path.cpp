@@ -153,7 +153,7 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
                     path_speed = temp_speeds[path_i+1];
             }
             //Rotation
-            double angle_diff = 2 * safe_asin(path_speed / (2 * curr.rA));  //alpha = 2 * asin(L/2R) - difference between current angle on circle and next
+            double rotation = 2 * safe_asin(path_speed / (2 * curr.rA));  //alpha = 2 * asin(L/2R) - difference between current angle on circle and next
             Angle start, end;
             start = curr.aA;
             end = curr.aB;
