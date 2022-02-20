@@ -33,6 +33,11 @@ Angle::Angle(double rad, AngleMeasure meas)
     CorrectAngle();
 }
 
+Angle::Angle(const Angle& ang)
+{
+    angle = ang.GetR();
+}
+
 void Angle::CorrectAngle()   //Correct angle to be in range from 0 to 2PI
 {
     while (angle < 0 || angle >= 2*M_PI)

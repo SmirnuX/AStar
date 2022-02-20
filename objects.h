@@ -97,6 +97,7 @@ public:
     //Getting info
     virtual QString GetName();  //Get name of an object
     virtual QString GetInfo();  //Get info of an object
+    virtual void ShowOutline(); //Highlight outline of an object, if there is one - else, draw circles
 };
 
 class MovingEntity: public Entity  //Base moving entity class

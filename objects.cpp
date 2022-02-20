@@ -257,6 +257,23 @@ QString Entity::GetInfo()
     return info;
 }
 
+void Entity::ShowOutline()
+{
+    QPainter pntr(picture);
+    QPen penn(QColor(180,230,230));
+    penn.setWidth(2);
+    pntr.setPen(penn);
+    if (this->collision_mask == nullptr)
+    {
+        pntr.drawEllipse(stack->current->entity->GetX() - 20, stack->current->entity->GetY() - 20, 40, 40);
+        pntr.drawEllipse(stack->current->entity->GetX() - 22, stack->current->entity->GetY() - 22, 44, 44);
+        pntr.drawEllipse(stack->current->entity->GetX() - 24, stack->current->entity->GetY() - 24, 48, 48);
+    }
+    else
+    {
+        collision_mask->ShowCollider(&pntr);
+    }
+}
 
 //=== MovingEntity class realization ===
 MovingEntity::MovingEntity(double _x, double _y, double _speed, Angle _angle, Collider* _collider):Entity(_x, _y, _collider)
@@ -317,8 +334,8 @@ QString MovingEntity::GetInfo() //Get coords, speed and angle
 {
     QString info;
     info += "x:\t" + QString::number(x) + "\ny:\t" + QString::number(y) + "\n";
-    info += QString::fromLocal8Bit("Скорость:\t") + QString::number(speed) + "\n";
-    info += QString::fromLocal8Bit("Угол:\t") + QString::number(angle.GetD());
+    info += "Скорость:\t" + QString::number(speed) + "\n";
+    info += "Угол:\t" + QString::number(angle.GetD());
     return info;
 }
 

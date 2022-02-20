@@ -268,6 +268,7 @@ void game::game_update()  //Function, called every frame
         path_graph->AStar();
         player->graph_to_path(path_graph);
 
+
         for(int i = 0; i < visible->size+2; i++)
         {
             delete obst[i].point;
@@ -276,7 +277,10 @@ void game::game_update()  //Function, called every frame
     }
     if (follow)
     {
-        player->FollowPath();
+        if (path_graph != nullptr)
+        {
+            player->FollowPath();
+        }
     }
 
     //Showing menu
@@ -325,14 +329,10 @@ void game::uiUpdate()   //UI update
     for (stack->Reset(); stack->current != NULL; stack->Next())
     {
         Menu->tableWidget->setItem(i, 0, new QTableWidgetItem(stack->current->entity->GetName()));
-        if (i == a)
+        if (i == a) //Showing selected object
         {
             Menu->Info->setText(stack->current->entity->GetInfo());
-            QPainter pntr(picture);
-            pntr.setPen(QColor(180,180,0));
-            pntr.drawEllipse(stack->current->entity->GetX() - 20, stack->current->entity->GetY() - 20, 40, 40);
-            pntr.drawEllipse(stack->current->entity->GetX() - 22, stack->current->entity->GetY() - 22, 44, 44);
-            pntr.drawEllipse(stack->current->entity->GetX() - 24, stack->current->entity->GetY() - 24, 48, 48);
+            stack->current->entity->ShowOutline();
             this->setFocus();
         }
         i++;

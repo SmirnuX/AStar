@@ -65,15 +65,13 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
 
 void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical properties
 {
-    QTextStream log_str(path_log);
-    log_str<<"   ===   ПОСТРОЕНИЕ ПУТИ   ===\n";
     if (gr == nullptr)
         return;
     if (!gr->IsWay())
         return;
     if (path != nullptr)   //Deleting old path
         delete path;
-    int MAX_POINTS = 600;    //Max length of path (in frames)
+    int MAX_POINTS = 300;    //Max length of path (in frames)
     //Next point of the path
     double path_x = x;
     double path_y = y;
@@ -112,7 +110,6 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
             if (max_spd > max_speed)
                 max_spd = max_speed;
         }
-        log_str << i+1 << "\tMAXSPD:\t" << max_spd;
 
         //Check if there is possibility to achieve that speed
         double acc_path;
@@ -128,11 +125,9 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
                 max_spd = sqrt(fabs(temp_speeds[i+2] * temp_speeds[i+2] - 2*(acc - friction) * length));
         }
         temp_speeds[i+1] = max_spd;
-        log_str << i+1 << "\tACTSPD:\t" << max_spd << "\n" <<
-                   "\tACCPATH:\t" << acc_path << "\tLENGTH\t" << length << '\n';
     }
 
-    //3. PAth building (and correcting speeds)
+    //3. Path building (and correcting speeds)
     uint path_i = 0;
     for (int i = 0; i < MAX_POINTS; i++)
     {
@@ -172,26 +167,38 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         {
             Angle line_angle(direction_to_point(path_x, path_y, curr.B.GetX(), curr.B.GetY())); //Direction to end of line
             double dist = distance(path_x, path_y, curr.B.GetX(), curr.B.GetY());
-            double temp_acc_path = ((path_speed+acc)*(path_speed+acc) - temp_speeds[path_i+1] * temp_speeds[path_i+1]) / (2 * dec);
-            if (temp_acc_path < dist-(path_speed+acc))
-                path_speed+=acc;
-            else
+            double temp_acc_path = ((path_speed+acc)*(path_speed+acc) - temp_speeds[path_i+1] * temp_speeds[path_i+1]) / (2 * (dec + friction));
+            if (temp_acc_path < dist-(path_speed+acc) - EPSILON)  //Can accelerate
+            {
+                path_speed += (acc - friction);
+                if (path_speed > max_speed)
+                {
+                    path_speed = max_speed;
+                }
+            }
+            else    //Test without acceleration
             {
                 temp_acc_path = ((path_speed)*(path_speed) - temp_speeds[path_i+1] * temp_speeds[path_i+1]) / (2 * dec);    //without acceleration
                 if (temp_acc_path >= dist-path_speed)
-                    path_speed-=dec;
+                {
+                    path_speed-= (dec + friction);
+                    if (path_speed < temp_speeds[path_i+1])
+                    {
+                        path_speed = temp_speeds[path_i+1];
+                    }
+                }
             }
             if ((path_angle - line_angle).GetR() < rot_speed.GetR())
                 path_angle = line_angle;
-            else if (path_angle < line_angle)
+            else if (path_angle < line_angle - EPSILON)
                 path_angle += rot_speed;
-            else
+            else if (path_angle > line_angle + EPSILON)
                 path_angle -= rot_speed;
         }
         //Check, if already in the end of path segment
         if (curr.type == ARC_CIRCLE)
         {
-            Angle real_angle(direction_to_point(path_x, path_y, curr.cx, curr.cy));
+            Angle real_angle(direction_to_point(curr.cx, curr.cy, path_x, path_y));
             Angle start = curr.aA;
             Angle end = curr.aB;
             if (start < end && end < real_angle)
@@ -219,8 +226,6 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         path->s[i] = path_speed;
         path->x[i] = path_x;
         path->y[i] = path_y;
-        log_str << i << "\t" << path_angle.GetD() << "d\t" << path_speed <<
-                   "\t x = " << path_x << "\t y = " << path_y << "\n";
         if (path_i >= vertex_count) //End of path
         {
             path->num = i+1;

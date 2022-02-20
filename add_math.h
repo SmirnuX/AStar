@@ -28,6 +28,7 @@ public:
 
     Angle();            //Uninitialized angle
     Angle(double rad, AngleMeasure meas = RADIANS);
+    Angle(const Angle& ang);    //Copy-ctor
 
     void CorrectAngle();    //Correct angle to be in range from 0 to 2PI
 

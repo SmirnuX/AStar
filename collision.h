@@ -25,7 +25,7 @@ public:
     virtual bool CheckCollision(LineCollider* other) = 0;       //Collision with line
     virtual bool CheckCollision(CircleCollider* other) = 0;     //Collision with circle
     virtual bool CheckCollision(PolygonCollider* other) = 0;    //Collision with polygon
-    virtual void ShowCollider() = 0;                            //Drawing collision mask
+    virtual void ShowCollider(QPainter *pntr = nullptr) = 0;                            //Drawing collision mask
 
     virtual void SetAngle(Angle _angle);
 
@@ -42,7 +42,7 @@ public:
     bool CheckCollision(LineCollider* other);       //Collision with line
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
-    void ShowCollider();                            //Drawing collision mask
+    void ShowCollider(QPainter *pntr = nullptr);                            //Drawing collision mask
 };
 
 class LineCollider : public Collider
@@ -58,7 +58,7 @@ public:
     bool CheckCollision(LineCollider* other);       //Collision with line
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
-    void ShowCollider();
+    void ShowCollider(QPainter *pntr = nullptr);
 
     void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
     void Drag(double dx, double dy);
@@ -80,7 +80,7 @@ public:
     bool CheckCollision(LineCollider* other);       //Collision with line
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
-    void ShowCollider();
+    void ShowCollider(QPainter *pntr = nullptr);
 };
 
 class PolygonCollider : public Collider
@@ -98,7 +98,7 @@ public:
     bool CheckCollision(LineCollider* other);       //Collision with line
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
-    void ShowCollider();
+    void ShowCollider(QPainter *pntr = nullptr);
 
     void MoveTo(double _x, double _y);  //Move origin to _x, _y
     void Drag(double dx, double dy);
