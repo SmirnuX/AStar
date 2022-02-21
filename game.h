@@ -65,12 +65,23 @@ public slots:
 class Path
 {
 public:
-    int num;
-    int i;
-    double* x;  //Array of: coords, angles and speeds on every segment of path
+    int num;    //Count of segments
+    int i;      //Current segment
+    //Array of coords
+    double* x;
     double* y;
-    Angle* a;
+    //Array of maximum speeds
     double* s;
+    //Array of segment types
+    bool* circle;
+    //Array of start and end angles
+    Angle* s_a;
+    Angle* e_a;
+    //Array of center points and radiuses
+    double* c_x;
+    double* c_y;
+    double* c_r;
+    //Final point
     double final_x;
     double final_y;
     Path(int _num, double tx, double ty);

@@ -342,8 +342,13 @@ Path::Path(int _num, double tx, double ty)
     num = _num;
     x = new double[_num];
     y = new double[_num];
-    a = new Angle[_num];
     s = new double[_num];
+    circle = new bool[_num];
+    s_a = new Angle[_num];
+    e_a = new Angle[_num];
+    c_x = new double[_num];
+    c_y = new double[_num];
+    c_r = new double[_num];
     i = 0;
     final_x = tx;
     final_y = ty;
@@ -353,8 +358,13 @@ Path::~Path()
 {
     delete[] x;
     delete[] y;
-    delete[] a;
     delete[] s;
+    delete[] circle;
+    delete[] s_a;
+    delete[] e_a;
+    delete[] c_x;
+    delete[] c_y;
+    delete[] c_r;
 }
 
 

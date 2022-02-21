@@ -370,55 +370,6 @@ QString EnemyTank::GetName()
     return "Вражеский танк";
 }
 
-
-void Tank::ShowPath()   //Drawing path
-{
-    if (path == NULL)
-        return;
-    QPainter pntr(picture);
-    QPen penn;
-    penn.setWidth(3);
-    bool color = false;
-    pntr.drawEllipse(path->x[path->i] - 4, path->y[path->i] - 4, 8, 8);
-    for (int i = 0; i < path->num - 1; i++)
-    {
-        if (color)
-        {
-            double br = 255 * (fabs(path->s[i]) / max_speed);
-            penn.setBrush(QBrush(QColor(br, 255-br, 0)));
-            pntr.setPen(penn);
-        }
-        pntr.drawLine(path->x[i], path->y[i], path->x[i+1], path->y[i+1]);
-    }
-}
-
-void Tank::FollowPath() //Actually follow built path
-{
-    if (path == NULL)
-        return;
-    if (path->s[path->i] > speed)
-        Accelerate(path->s[path->i] - speed);
-    else
-        Deccelerate(speed - path->s[path->i]);
-    //Tank angle - clockwise, nut path angle - counter clockwise
-    qDebug() << anglediff(-path->a[path->i], angle);
-    if (fabs(anglediff(-path->a[path->i], angle)) < rot_speed)   //If difference between target and current angles can be solved by one frsme
-        SetAngle(-path->a[path->i]);
-    else if (fabs(anglediff(-path->a[path->i], angle)) > EPSILON)  //If there is difference, but it can't be solved in moment
-    {
-        if (angle > -path->a[path->i])
-            Turn(-rot_speed);
-        else
-            Turn(rot_speed);
-    }
-    path->i++;
-    if (path->i == path->num || (almostEq(x, path->final_x, 2) && almostEq(y, path->final_y, 2)))
-    {
-        delete path;
-        path = nullptr;
-    }
-}
-
 QString Tank::GetName()
 {
     return "Танк";
