@@ -50,6 +50,17 @@ bool PointCollider::CheckCollision(LineCollider* other)     //Collision with lin
            other->line->GetMinX() < x && x < other->line->GetMaxX();
 }
 
+bool PointCollider::CheckCollision(ChainCollider* other)    //Collision with chain
+{
+    for (int i = 0; i < other->count; i++)
+    {
+        if (almostEq(   other->lines[i].a*x + other->lines[i].b*y + other->lines[i].c, 0) &&
+                        other->lines[i].GetMinX() < x && x < other->lines[i].GetMaxX())
+            return true;
+    }
+    return false;
+}
+
 bool PointCollider::CheckCollision(CircleCollider* other)   //Collision with circle
 {
     return (distance(x, y, other->GetX(), other->GetY()) < (other->circle->GetR() * other->circle->GetR()));
@@ -219,6 +230,18 @@ bool LineCollider::CheckCollision(LineCollider* other)       //Collision with li
     return is_in_this_x && is_in_this_y && is_in_other_x && is_in_other_y;
 }
 
+bool LineCollider::CheckCollision(ChainCollider* other)    //Collision with chain
+{
+    for (int i = 0; i < other->count; i++)
+    {
+        LineCollider lc = LineCollider(other->lines[i].GetMinX(), other->lines[i].GetMinY(),
+                                       other->lines[i].GetMaxX(), other->lines[i].GetMaxY(),);
+        if (CheckCollision(&lc))
+            return true;
+    }
+    return false;
+}
+
 bool LineCollider::CheckCollision(CircleCollider* other)     //Collision with circle
 {
     //Search for nearest point on line to circle
@@ -328,6 +351,25 @@ void LineCollider::SetAngle(Angle angle)
 }
 
 
+//=== ChainCollider class realization ===
+ChainCollider::ChainCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y);
+ChainCollider::~ChainCollider();
+
+bool ChainCollider::CheckCollision(Collider* other);           //Collision with unknown object
+bool ChainCollider::CheckCollision(PointCollider* other);      //Collision with point
+bool ChainCollider::CheckCollision(LineCollider* other);       //Collision with line
+bool ChainCollider::CheckCollision(ChainCollider* other);      //Collision with chain
+bool ChainCollider::CheckCollision(CircleCollider* other);     //Collision with circle
+bool ChainCollider::CheckCollision(PolygonCollider* other);    //Collision with polygon
+void ChainCollider::ShowCollider(QPainter *pntr = nullptr);
+
+void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
+void Drag(double dx, double dy);
+void Turn(Angle angle, Point& pivot);
+void Turn(Angle angle); //Rotate relative to left point
+void SetAngle(Angle angle);
+
+
 //=== CircleCollider class realization ===
 CircleCollider::CircleCollider(double _x, double _y, double _r) : Collider(_x, _y)
 {
@@ -350,6 +392,11 @@ bool CircleCollider::CheckCollision(PointCollider* other)      //Collision with 
 }
 
 bool CircleCollider::CheckCollision(LineCollider* other)       //Collision with line
+{
+    return other->CheckCollision(this);
+}
+
+bool CircleCollider::CheckCollision(ChainCollider* other)    //Collision with chain
 {
     return other->CheckCollision(this);
 }
@@ -439,6 +486,11 @@ bool PolygonCollider::CheckCollision(PointCollider* other)      //Collision with
 }
 
 bool PolygonCollider::CheckCollision(LineCollider* other)       //Collision with line
+{
+    return other->CheckCollision(this);
+}
+
+bool PolygonCollider::CheckCollision(ChainCollider* other)    //Collision with chain
 {
     return other->CheckCollision(this);
 }

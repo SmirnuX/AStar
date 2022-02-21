@@ -59,7 +59,7 @@ vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle)    //Vertex creatio
     return res;
 }
 
-graph* build_graph(obstacle* objects, int count, uint _start, uint  _end) //Building graph
+graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint delte) //Building graph
 {
     graph* result = new graph();
     bool targets = false;

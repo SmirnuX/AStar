@@ -8,6 +8,7 @@ extern QPixmap* picture;
 
 class PointCollider;
 class LineCollider;
+class ChainCollider;
 class CircleCollider;
 class PolygonCollider;
 
@@ -23,9 +24,10 @@ public:
     virtual bool CheckCollision(Collider* other) = 0;           //Collision with unknown object
     virtual bool CheckCollision(PointCollider* other) = 0;      //Collision with point
     virtual bool CheckCollision(LineCollider* other) = 0;       //Collision with line
+    virtual bool CheckCollision(ChainCollider* other);          //Collision with chain
     virtual bool CheckCollision(CircleCollider* other) = 0;     //Collision with circle
     virtual bool CheckCollision(PolygonCollider* other) = 0;    //Collision with polygon
-    virtual void ShowCollider(QPainter *pntr = nullptr) = 0;                            //Drawing collision mask
+    virtual void ShowCollider(QPainter *pntr = nullptr) = 0;    //Drawing collision mask
 
     virtual void SetAngle(Angle _angle);
 
@@ -40,6 +42,7 @@ public:
     bool CheckCollision(Collider* other);           //Collision with unknown object
     bool CheckCollision(PointCollider* other);      //Collision with point
     bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(ChainCollider* other);      //Collision with chain
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);                            //Drawing collision mask
@@ -56,6 +59,32 @@ public:
     bool CheckCollision(Collider* other);           //Collision with unknown object
     bool CheckCollision(PointCollider* other);      //Collision with point
     bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(ChainCollider* other);      //Collision with chain
+    bool CheckCollision(CircleCollider* other);     //Collision with circle
+    bool CheckCollision(PolygonCollider* other);    //Collision with polygon
+    void ShowCollider(QPainter *pntr = nullptr);
+
+    void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
+    void Drag(double dx, double dy);
+    void Turn(Angle angle, Point& pivot);
+    void Turn(Angle angle); //Rotate relative to left point
+    void SetAngle(Angle angle);
+};
+
+class ChainCollider : public Collider
+{
+public:
+    Line* lines;
+    Point** orig_points;
+    int count;
+
+    ChainCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y);
+    ~ChainCollider();
+
+    bool CheckCollision(Collider* other);           //Collision with unknown object
+    bool CheckCollision(PointCollider* other);      //Collision with point
+    bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(ChainCollider* other);      //Collision with chain
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);
@@ -96,6 +125,7 @@ public:
     bool CheckCollision(Collider* other);           //Collision with unknown object
     bool CheckCollision(PointCollider* other);      //Collision with point
     bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(ChainCollider* other);          //Collision with chain
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);

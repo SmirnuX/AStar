@@ -13,11 +13,11 @@ extern QPixmap* picture;
 
 enum EDGE_TYPE {LINEAR,         //Straight line
                 ARC_CIRCLE,     //Arc on circle
-                ARC_ELLIPSE};   //Arc on ellipse
+                ARC_ELLIPSE};   //Arc on ellipse [NOT IMPLEMENTED]
 
 enum OBJ_SHAPE {POINT,      //No obstacle - used for start and end points
                 CIRCLE,     //Circle
-                ELLIPSE};   //Ellipse
+                ELLIPSE};   //Ellipse [NOT IMPLEMENTED]
 
 struct obstacle
 {
@@ -91,7 +91,7 @@ struct temp_edges
 
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle = Angle(0));
 vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle = Angle(0));
-graph* build_graph(obstacle* objects, int count,  uint _start=0, uint _end=1);
+graph* build_graph(obstacle* objects, int count,  uint _start=0, uint _end=1, uint delte = 10);
 
 struct temp_edges get_edges_point_to_point(struct vertex** verts, struct edge* edges,
                                            struct obstacle* A, struct obstacle* B);  //Add line from point A to point B
