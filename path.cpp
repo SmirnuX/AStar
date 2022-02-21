@@ -71,8 +71,8 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         return;
     if (path != nullptr)   //Deleting old path
         delete path;
-    int MAX_POINTS = 600;    //Max count of path points
-    //Current point on path
+    int MAX_POINTS = 300;    //Max length of path (in frames)
+    //Next point of the path
     double path_x = x;
     double path_y = y;
     double path_speed = speed;  //Target speed at next point

@@ -28,24 +28,26 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
         key[i]=false;
     //Tank creation
     player = new Tank(500, 500);
-    box = new Box(1000, 500);
-    Box* box1 = new Box(1200, 700);
-    Box* box2 = new Box(500, 200);
+    box = new Box(1000, 400);
+    Box* box1 = new Box(1200, 600);
+    Box* box2 = new Box(500, 300);
+    Box* box3 = new Box(800, 550);
     //Entity stack creation
     stack = new EntityStack();
     stack->Add((Entity*) player);
-    stack->Add((Entity*) new Wall(1200, 500));
-    stack->Add((Entity*) new EnemyTank(200, 200));   //Enemy tank
+//    stack->Add((Entity*) new Wall(1200, 500));
+//    stack->Add((Entity*) new EnemyTank(200, 200));   //Enemy tank
 
     stack->Add((Entity*) box);      //Obstacles
     stack->Add((Entity*) box1);
     stack->Add((Entity*) box2);
+    stack->Add((Entity*) box3);
     //Visible obstacles
     visible = new EntityStack();
     visible->Add((Entity*) box);
     visible->Add((Entity*) box1);
     visible->Add((Entity*) box2);
-
+    visible->Add((Entity*) box3);
     //Updating this every 15ms
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
@@ -266,6 +268,7 @@ void game::game_update()  //Function, called every frame
         path_graph->AStar();
         player->graph_to_path(path_graph);
 
+
         for(int i = 0; i < visible->size+2; i++)
         {
             delete obst[i].point;
@@ -274,7 +277,10 @@ void game::game_update()  //Function, called every frame
     }
     if (follow)
     {
-        player->FollowPath();
+        if (path_graph != nullptr)
+        {
+            player->FollowPath();
+        }
     }
 
     //Showing menu
@@ -323,14 +329,10 @@ void game::uiUpdate()   //UI update
     for (stack->Reset(); stack->current != NULL; stack->Next())
     {
         Menu->tableWidget->setItem(i, 0, new QTableWidgetItem(stack->current->entity->GetName()));
-        if (i == a)
+        if (i == a) //Showing selected object
         {
             Menu->Info->setText(stack->current->entity->GetInfo());
-            QPainter pntr(picture);
-            pntr.setPen(QColor(180,180,0));
-            pntr.drawEllipse(stack->current->entity->GetX() - 20, stack->current->entity->GetY() - 20, 40, 40);
-            pntr.drawEllipse(stack->current->entity->GetX() - 22, stack->current->entity->GetY() - 22, 44, 44);
-            pntr.drawEllipse(stack->current->entity->GetX() - 24, stack->current->entity->GetY() - 24, 48, 48);
+            stack->current->entity->ShowOutline();
             this->setFocus();
         }
         i++;

@@ -135,14 +135,25 @@ bool PointCollider::CheckCollision(PolygonCollider* other)  //Collision with pol
     return inside;
 }
 
-void PointCollider::ShowCollider()  //Drawing collider
+void PointCollider::ShowCollider(QPainter* pntr)  //Drawing collider
 {
-    QPainter painter(picture);
-    if (collisions > 0)
-        painter.setPen(QColor(0,255,0));
-    else
-        painter.setPen(QColor(255,0,0));
-    painter.drawPoint(GetX(), GetY());
+    QPainter* painter = pntr;
+    bool ext_pntr = false;
+    if (painter == nullptr)
+    {
+        painter = new QPainter(picture);
+        if (collisions > 0)
+            painter->setPen(QColor(0,255,0));
+        else
+            painter->setPen(QColor(255,0,0));
+        collisions = 0;
+        ext_pntr = true;
+    }
+    painter->drawEllipse(GetX() - 4, GetY() - 4, 8, 8);
+    if (ext_pntr)
+    {
+        delete painter;
+    }
 }
 
 
@@ -252,15 +263,25 @@ bool LineCollider::CheckCollision(PolygonCollider* other)            //Collision
     return point_c.CheckCollision(other);    //Checking, if whole line is in segment
 }
 
-void LineCollider::ShowCollider()
+void LineCollider::ShowCollider(QPainter* pntr)
 {
-    QPainter painter(picture);
-    if (collisions > 0)
-        painter.setPen(QColor(0,255,0));
-    else
-        painter.setPen(QColor(255,0,0));
-    painter.drawLine(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
-    collisions = 0;
+    QPainter* painter = pntr;
+    bool ext_pntr = false;
+    if (painter == nullptr)
+    {
+        painter = new QPainter(picture);
+        if (collisions > 0)
+            painter->setPen(QColor(0,255,0));
+        else
+            painter->setPen(QColor(255,0,0));
+        collisions = 0;
+        ext_pntr = true;
+    }
+    painter->drawLine(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
+    if (ext_pntr)
+    {
+        delete painter;
+    }
 }
 
 void LineCollider::MoveTo(double _x, double _y)   //Move first point to (_x, _y) - second point will follow
@@ -365,15 +386,25 @@ bool CircleCollider::CheckCollision(PolygonCollider* other)            //Collisi
     return false;
 }
 
-void CircleCollider::ShowCollider()
+void CircleCollider::ShowCollider(QPainter* pntr)
 {
-    QPainter painter(picture);
-    if (collisions > 0)
-        painter.setPen(QColor(0,255,0));
-    else
-        painter.setPen(QColor(255,0,0));
-    painter.drawEllipse(GetX() - circle->GetR(), GetY() - circle->GetR(), 2 * circle->GetR(), 2 * circle->GetR());
-    collisions = 0;
+    QPainter* painter = pntr;
+    bool ext_pntr = false;
+    if (painter == nullptr)
+    {
+        painter = new QPainter(picture);
+        if (collisions > 0)
+            painter->setPen(QColor(0,255,0));
+        else
+            painter->setPen(QColor(255,0,0));
+        collisions = 0;
+        ext_pntr = true;
+    }
+    painter->drawEllipse(GetX() - circle->GetR(), GetY() - circle->GetR(), 2 * circle->GetR(), 2 * circle->GetR());
+    if (ext_pntr)
+    {
+        delete painter;
+    }
 }
 
 
@@ -451,14 +482,21 @@ bool PolygonCollider::CheckCollision(PolygonCollider* other)            //Collis
     return false;
 }
 
-void PolygonCollider::ShowCollider()
+void PolygonCollider::ShowCollider(QPainter *pntr)
 {
-    QPainter painter(picture);
+    QPainter* painter = pntr;
+    bool ext_pntr = false;
+    if (painter == nullptr)
+    {
+        painter = new QPainter(picture);
+        if (collisions > 0)
+            painter->setPen(QColor(0,255,0));
+        else
+            painter->setPen(QColor(255,0,0));
+        collisions = 0;
+        ext_pntr = true;
+    }
     Point* curr, *next;
-    if (collisions > 0)
-        painter.setPen(QColor(0,255,0));
-    else
-        painter.setPen(QColor(255,0,0));
     for(int i=0; i < count; i++)
     {
         curr = points[i];
@@ -466,9 +504,12 @@ void PolygonCollider::ShowCollider()
             next = points[i+1];
         else
             next = points[0];
-        painter.drawLine(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
+        painter->drawLine(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
     }
-    collisions = 0;
+    if (ext_pntr)
+    {
+        delete painter;
+    }
 }
 
 void PolygonCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
