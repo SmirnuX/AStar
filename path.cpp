@@ -14,12 +14,14 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
         for (uint i = 0; i < gr->edges.size(); i++)
         {
             vertex* adj;    //Adjacent vertex
+            double dir = 1.0;   //Direction of movement - aA is before aB
             if (gr->edges[i].pA == curr)
             {
                 adj = gr->edges[i].pB;
             }
             else if (gr->edges[i].pB == curr)
             {
+                dir = -1.0; //Reverse direction
                 adj = gr->edges[i].pA;
             }
             else
@@ -37,7 +39,7 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
                 }
                 else
                 {
-                    if (gr->edges[i].pA == curr)    //Start and edn angles
+                    if (gr->edges[i].pA == curr)    //Start and end angles
                     {
                         temp_edge.aA = gr->edges[i].pA->angle;
                         temp_edge.aB = gr->edges[i].pB->angle;
@@ -48,6 +50,7 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
                         temp_edge.aA = gr->edges[i].pB->angle;
                     }
                     temp_edge.type = ARC_CIRCLE;
+                    temp_edge.direction = dir;
                     temp_edge.rA = gr->edges[i].rA;
                     temp_edge.cx = gr->edges[i].cx;
                     temp_edge.cy = gr->edges[i].cy;
@@ -71,11 +74,6 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         return;
     if (path != nullptr)   //Deleting old path
         delete path;
-    int MAX_POINTS = 300;    //Max length of path (in frames)
-    //Next point of the path
-    double path_x = x;
-    double path_y = y;
-    double path_speed = speed;  //Target speed at next point
 
     //1. Searching for path in graph
     std::vector<edge> temp_path = get_path_from_graph(gr);
@@ -83,6 +81,8 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
     //2. Creating path
     uint segment_count = temp_path.size();   //Number of segments
     path = new Path(segment_count, gr->vertices[target]->point->GetX(), gr->vertices[target]->point->GetY());
+    path->startx = x;
+    path->starty = y;
 
     //3. Calculating max speed for every segment
     double* temp_speeds = new double[segment_count];
@@ -132,17 +132,18 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
     {
         if (temp_path[i].type == ARC_CIRCLE)
         {
-            path->c_x[i] = temp_path[i].cx;
-            path->c_y[i] = temp_path[i].cy;
-            path->c_r[i] = temp_path[i].rA;
-            path->s_a[i] = temp_path[i].aA;
-            path->e_a[i] = temp_path[i].aB;
-            qDebug() << path->s_a[i].GetD() << " " << path->e_a[i].GetD();
+            path->pts[i].c_x = temp_path[i].cx;
+            path->pts[i].c_y = temp_path[i].cy;
+            path->pts[i].c_r = temp_path[i].rA;
+            path->pts[i].s_a = temp_path[i].aA;
+            path->pts[i].e_a = temp_path[i].aB;
+            qDebug() << path->pts[i].s_a.GetD() << " " << path->pts[i].e_a.GetD();
         }
-        path->circle[i] = temp_path[i].type == ARC_CIRCLE;
-        path->x[i] = temp_path[i].B.GetX();
-        path->y[i] = temp_path[i].B.GetY();
-        path->s[i] = temp_speeds[i];
+        path->pts[i].circle = temp_path[i].type == ARC_CIRCLE;
+        path->pts[i].x = temp_path[i].B.GetX();
+        path->pts[i].y = temp_path[i].B.GetY();
+        path->pts[i].s = temp_speeds[i];
+        path->pts[i].direction = temp_path[i].direction;
     }
 
     delete[] temp_speeds;
@@ -288,21 +289,23 @@ void Tank::ShowPath()   //Drawing path
             pntr.setPen(penn);
         }
 
-        if (path->circle[i])
+        if (path->pts[i].circle)
         {
-            double sa = -16 * path->s_a[i].GetD();
-            double ea = -16 * (path->e_a[i].GetD() - path->s_a[i].GetD());
-            qDebug() << path->s_a[i].GetD() << "|" << path->e_a[i].GetD();
-            pntr.drawArc(path->c_x[i] - path->c_r[i], path->c_y[i] - path->c_r[i],
-                         2*path->c_r[i], 2*path->c_r[i],
+            double sa = -16 * path->pts[i].s_a.GetD();
+            double ea = -16 * (path->pts[i].e_a.GetD() - path->pts[i].s_a.GetD());
+            if (path->pts[i].direction < 0)
+                sa += 5760;
+            qDebug() << path->pts[i].s_a.GetD() << "|" << path->pts[i].e_a.GetD();
+            pntr.drawArc(path->pts[i].c_x - path->pts[i].c_r, path->pts[i].c_y - path->pts[i].c_r,
+                         2*path->pts[i].c_r, 2*path->pts[i].c_r,
                          floor(sa), floor(ea));
         }
         else
         {
             if (i == 0)
-                pntr.drawLine(GetX(), GetY(), path->x[i], path->y[i]);
+                pntr.drawLine(path->startx, path->starty, path->pts[i].x, path->pts[i].y);
             else
-                pntr.drawLine(path->x[i-1], path->y[i-1], path->x[i], path->y[i]);
+                pntr.drawLine(path->pts[i-1].x, path->pts[i-1].y, path->pts[i].x, path->pts[i].y);
         }
     }
 }

@@ -55,6 +55,7 @@ struct edge
     Point A, B;   //Star and end points
 
     Angle aA, aB;  //Start and end angles
+    double direction;   //Direction of an arc - 1 - clockwise, -1 - counter-clockwise
     double rA, rB;  //Radiuses
     double cx, cy;  //Center coords
     double length;  //Length of edge
