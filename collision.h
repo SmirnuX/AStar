@@ -24,7 +24,7 @@ public:
     virtual bool CheckCollision(Collider* other) = 0;           //Collision with unknown object
     virtual bool CheckCollision(PointCollider* other) = 0;      //Collision with point
     virtual bool CheckCollision(LineCollider* other) = 0;       //Collision with line
-    virtual bool CheckCollision(ChainCollider* other);          //Collision with chain
+    virtual bool CheckCollision(ChainCollider* other) = 0;          //Collision with chain
     virtual bool CheckCollision(CircleCollider* other) = 0;     //Collision with circle
     virtual bool CheckCollision(PolygonCollider* other) = 0;    //Collision with polygon
     virtual void ShowCollider(QPainter *pntr = nullptr) = 0;    //Drawing collision mask
@@ -74,12 +74,15 @@ public:
 class ChainCollider : public Collider
 {
 public:
-    Line* lines;
+    Point** points;
+    Line** lines;
     Point** orig_points;
     int count;
 
     ChainCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y);
     ~ChainCollider();
+
+    void update_eq();   //Update equations
 
     bool CheckCollision(Collider* other);           //Collision with unknown object
     bool CheckCollision(PointCollider* other);      //Collision with point
@@ -107,6 +110,7 @@ public:
     bool CheckCollision(Collider* other);           //Collision with unknown object
     bool CheckCollision(PointCollider* other);      //Collision with point
     bool CheckCollision(LineCollider* other);       //Collision with line
+    bool CheckCollision(ChainCollider* other);      //Collision with chain
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);

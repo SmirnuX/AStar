@@ -32,6 +32,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     Box* box1 = new Box(1200, 600);
     Box* box2 = new Box(500, 300);
     Box* box3 = new Box(800, 550);
+    WallChain* wc = new WallChain(100, 100);
     //Entity stack creation
     stack = new EntityStack();
     stack->Add((Entity*) player);
@@ -42,6 +43,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     stack->Add((Entity*) box1);
     stack->Add((Entity*) box2);
     stack->Add((Entity*) box3);
+    stack->Add((Entity*) wc);
     //Visible obstacles
     visible = new EntityStack();
     visible->Add((Entity*) box);

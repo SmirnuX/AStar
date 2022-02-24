@@ -150,4 +150,13 @@ public:
     QString GetName();
 };
 
+class WallChain: public Entity  //Two walls connected
+{
+public:
+    WallChain(double _x, double _y);
+    void Show();
+
+    QString GetName();
+};
+
 #endif // OBJECTS_H

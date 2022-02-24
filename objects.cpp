@@ -380,3 +380,25 @@ QString Box::GetName()
     return "Ящик";
 }
 
+WallChain::WallChain(double _x, double _y):Entity(_x, _y)
+{
+    double xs[3] = {_x, _x + 50, _x};
+    double ys[3] = {_y - 50, _y, _y + 50};
+    collision_mask = (Collider*) new ChainCollider(xs, ys, 3, _x, _y);
+}
+
+void WallChain::Show()
+{
+    QPainter painter(picture);
+    painter.setPen(QColor(0,0,0));
+    painter.setBrush(QColor(128,128,128));
+    painter.drawLine(x, y-50, x+50, y);
+    painter.drawLine(x+50, y, x, y+50);
+}
+
+QString WallChain::GetName()
+{
+    return "Галка";
+}
+
+

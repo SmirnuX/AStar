@@ -52,10 +52,10 @@ bool PointCollider::CheckCollision(LineCollider* other)     //Collision with lin
 
 bool PointCollider::CheckCollision(ChainCollider* other)    //Collision with chain
 {
-    for (int i = 0; i < other->count; i++)
+    for (int i = 0; i < other->count-1; i++)
     {
-        if (almostEq(   other->lines[i].a*x + other->lines[i].b*y + other->lines[i].c, 0) &&
-                        other->lines[i].GetMinX() < x && x < other->lines[i].GetMaxX())
+        if (almostEq(   other->lines[i]->a*x + other->lines[i]->b*y + other->lines[i]->c, 0) &&
+                        other->lines[i]->GetMinX() < x && x < other->lines[i]->GetMaxX())
             return true;
     }
     return false;
@@ -232,10 +232,10 @@ bool LineCollider::CheckCollision(LineCollider* other)       //Collision with li
 
 bool LineCollider::CheckCollision(ChainCollider* other)    //Collision with chain
 {
-    for (int i = 0; i < other->count; i++)
+    for (int i = 0; i < other->count-1; i++)
     {
-        LineCollider lc = LineCollider(other->lines[i].GetMinX(), other->lines[i].GetMinY(),
-                                       other->lines[i].GetMaxX(), other->lines[i].GetMaxY(),);
+        LineCollider lc = LineCollider(other->lines[i]->GetMinX(), other->lines[i]->GetMinY(),
+                                       other->lines[i]->GetMaxX(), other->lines[i]->GetMaxY());
         if (CheckCollision(&lc))
             return true;
     }
@@ -352,22 +352,171 @@ void LineCollider::SetAngle(Angle angle)
 
 
 //=== ChainCollider class realization ===
-ChainCollider::ChainCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y);
-ChainCollider::~ChainCollider();
+ChainCollider::ChainCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y) : Collider(orig_x, orig_y)
+{
+    points = new Point*[num];
+    lines = new Line*[num - 1];
+    orig_points = new Point*[num];
+    for(int i=0; i<num; i++)    //Copy
+    {
+        points[i] = new Point(x_s[i], y_s[i]);
+        orig_points[i] = new Point(x_s[i] - x, y_s[i] - y);
+        if (i != 0)
+        {
+            lines[i-1] = new Line(Point(x_s[i-1], y_s[i-1]), Point(x_s[i], y_s[i]));
+        }
+    }
+    count = num;
+}
 
-bool ChainCollider::CheckCollision(Collider* other);           //Collision with unknown object
-bool ChainCollider::CheckCollision(PointCollider* other);      //Collision with point
-bool ChainCollider::CheckCollision(LineCollider* other);       //Collision with line
-bool ChainCollider::CheckCollision(ChainCollider* other);      //Collision with chain
-bool ChainCollider::CheckCollision(CircleCollider* other);     //Collision with circle
-bool ChainCollider::CheckCollision(PolygonCollider* other);    //Collision with polygon
-void ChainCollider::ShowCollider(QPainter *pntr = nullptr);
+ChainCollider::~ChainCollider()
+{
+    for(int i=0; i<count; i++)
+    {
+        delete(points[i]);
+        delete(orig_points[i]);
+        if (i != 0)
+            delete(lines[i-1]);
+    }
+    delete[](orig_points);
+    delete[](lines);
+    delete[](points);
+}
 
-void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
-void Drag(double dx, double dy);
-void Turn(Angle angle, Point& pivot);
-void Turn(Angle angle); //Rotate relative to left point
-void SetAngle(Angle angle);
+void ChainCollider::update_eq()   //Update equations
+{
+    for(int i=1; i<count; i++)    //Copy
+    {
+        lines[i-1]->Set(points[i-1]->GetX(), points[i-1]->GetY(), points[i]->GetX(), points[i]->GetY());
+    }
+}
+
+bool ChainCollider::CheckCollision(Collider* other)           //Collision with unknown object
+{
+    return other->CheckCollision(this);
+}
+
+bool ChainCollider::CheckCollision(PointCollider* other)      //Collision with point
+{
+    return other->CheckCollision(this);
+}
+
+bool ChainCollider::CheckCollision(LineCollider* other)       //Collision with line
+{
+    return other->CheckCollision(this);
+}
+
+bool ChainCollider::CheckCollision(ChainCollider* other)      //Collision with chain
+{
+    for (int i = 0; i < other->count; i++)
+    {
+        LineCollider lc = LineCollider(other->lines[i]->GetMinX(), other->lines[i]->GetMinY(),
+                                       other->lines[i]->GetMaxX(), other->lines[i]->GetMaxY());
+        if (CheckCollision(&lc))
+            return true;
+    }
+    return false;
+}
+
+bool ChainCollider::CheckCollision(CircleCollider* other)     //Collision with circle
+{
+    for (int i = 0; i < count-1; i++)
+    {
+        LineCollider lc = LineCollider(lines[i]->GetMinX(), lines[i]->GetMinY(),
+                                       lines[i]->GetMaxX(), lines[i]->GetMaxY());
+        if (lc.CheckCollision(other))
+            return true;
+    }
+    return false;
+}
+
+bool ChainCollider::CheckCollision(PolygonCollider* other)    //Collision with polygon
+{
+    for (int i = 0; i < count-1; i++)
+    {
+        LineCollider lc = LineCollider(lines[i]->GetMinX(), lines[i]->GetMinY(),
+                                       lines[i]->GetMaxX(), lines[i]->GetMaxY());
+        if (lc.CheckCollision(other))
+            return true;
+    }
+    return false;
+}
+
+void ChainCollider::ShowCollider(QPainter *pntr)
+{
+    QPainter* painter = pntr;
+    bool ext_pntr = false;
+    if (painter == nullptr)
+    {
+        painter = new QPainter(picture);
+        if (collisions > 0)
+            painter->setPen(QColor(0,255,0));
+        else
+            painter->setPen(QColor(255,0,0));
+        collisions = 0;
+        ext_pntr = true;
+    }
+    for (int i = 0; i < count-1; i++)
+    {
+        painter->drawLine(lines[i]->GetMinX(), lines[i]->GetMinY(), lines[i]->GetMaxX(), lines[i]->GetMaxY());
+    }
+    if (ext_pntr)
+    {
+        delete painter;
+    }
+}
+
+void ChainCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
+{
+    double dx = _x - GetX();
+    double dy = _y - GetY();
+    Point::MoveTo(_x, _y);
+    for(int i=0; i < count; i++)
+    {
+        points[i]->Drag(dx, dy);
+    }
+    update_eq();
+}
+
+void ChainCollider::Drag(double dx, double dy)
+{
+    Point::Drag(dx, dy);
+    for(int i=0; i < count; i++)
+    {
+        points[i]->Drag(dx, dy);
+    }
+    update_eq();
+}
+
+void ChainCollider::Turn(Angle angle, Point& pivot)
+{
+    for(int i=0; i < count; i++)
+    {
+        points[i]->Turn(angle, pivot);
+    }
+    update_eq();
+}
+
+void ChainCollider::Turn(Angle angle)
+{
+    Point a(x, y);
+    for(int i=0; i < count; i++)
+    {
+        points[i]->Turn(angle, a);
+    }
+    update_eq();
+}
+
+void ChainCollider::SetAngle(Angle angle)
+{
+    Point a(x, y);
+    for(int i=0; i < count; i++)
+    {
+        points[i]->MoveTo(orig_points[i]->GetX() + x, orig_points[i]->GetY() + y);
+        points[i]->Turn(angle, a);
+    }
+    update_eq();
+}
 
 
 //=== CircleCollider class realization ===
@@ -566,10 +715,12 @@ void PolygonCollider::ShowCollider(QPainter *pntr)
 
 void PolygonCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
 {
+    double dx = _x - GetX();
+    double dy = _y - GetY();
     Point::MoveTo(_x, _y);
     for(int i=0; i < count; i++)
     {
-        points[i]->Drag(_x - points[i]->GetX(), _y - points[i]->GetY());
+        points[i]->Drag(dx, dy);
     }
 }
 
