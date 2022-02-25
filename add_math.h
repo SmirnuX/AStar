@@ -74,8 +74,11 @@ double distance2(double ax, double ay, double bx, double by);  //Square distacnc
 double distance(double ax, double ay, double bx, double by);  //Distance between points
 
 
-
+//=== Simple helper functions ===
 double sign(double a);  //1 if a >=0, -1 if a<0
+double min(double a, double b);
+double max(double a, double b);
+
 bool almostEq(double a, double b, double eps = EPSILON);  //Are delta between a and b lesser then eps
 bool intersect(double a1, double a2, double b1, double b2, double eps = EPSILON); //Does (a1,a2) and (b1, b2) intersect.
 

@@ -14,6 +14,12 @@ Collider::~Collider()
     //Empty body
 }
 
+bool Collider::CheckBBCollision(Collider* other)    //Check if bounding boxed collides
+{
+    return ( intersect(top, bottom, other->top, other->bottom) &&
+             intersect(left, right, other->left, other->right) );
+}
+
 void Collider::SetAngle(Angle _angle)
 {
     angle = _angle;
@@ -23,7 +29,7 @@ void Collider::SetAngle(Angle _angle)
 //=== PointCollider realization ===
 PointCollider::PointCollider(double _x, double _y) : Collider(_x, _y)
 {
-    //Empty body
+    PointCollider::updateBB();
 }
 
 PointCollider::~PointCollider()
@@ -31,9 +37,21 @@ PointCollider::~PointCollider()
     //Empty body
 }
 
+void PointCollider::updateBB()    //Update bounding box
+{
+    top = GetY() + EPSILON;
+    bottom = GetY() - EPSILON;
+    left = GetX() - EPSILON;
+    right = GetX() + EPSILON;
+}
+
+
 bool PointCollider::CheckCollision(Collider* other)         //Collision with unknown object
 {
-    return other->CheckCollision(this);
+    if (CheckBBCollision(other))
+        return other->CheckCollision(this);
+    else
+        return false;
 }
 
 bool PointCollider::CheckCollision(PointCollider* other)    //Collision with point
@@ -172,6 +190,7 @@ void PointCollider::ShowCollider(QPainter* pntr)  //Drawing collider
 LineCollider::LineCollider(double x1, double y1, double x2, double y2):Collider(x1 ,y1)
 {
     line = new Line(Point(x1, y1), Point(x2, y2));
+    LineCollider::updateBB();
 }
 
 LineCollider::~LineCollider()
@@ -179,9 +198,20 @@ LineCollider::~LineCollider()
     delete line;
 }
 
+void LineCollider::updateBB()    //Update bounding box
+{
+    top = max(line->GetMinY(), line->GetMaxY());
+    bottom = min(line->GetMinY(), line->GetMaxY());
+    left = line->GetMinX();
+    right = line->GetMaxX();
+}
+
 bool LineCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
-    return other->CheckCollision(this);
+    if (CheckBBCollision(other))
+        return other->CheckCollision(this);
+    else
+        return false;
 }
 
 bool LineCollider::CheckCollision(PointCollider* other)      //Collision with point [ALREADY IMPLEMENTED]
@@ -324,23 +354,27 @@ void LineCollider::MoveTo(double _x, double _y)   //Move first point to (_x, _y)
         line->Set(_x - dx, _y - dy, _x, _y);
     }
     Point::MoveTo(_x, _y);
+    updateBB();
 }
 
 void LineCollider::Drag(double dx, double dy)
 {
     line->Set(line->GetMinX() + dx, line->GetMinY() + dy, line->GetMaxX() + dx, line->GetMaxY() + dy);
     Point::Drag(dx, dy);
+    updateBB();
 }
 
 void LineCollider::Turn(Angle angle, Point& pivot)
 {
     line->Turn(angle, pivot);
+    updateBB();
 }
 
 void LineCollider::Turn(Angle angle) //Rotate relative to origin
 {
     Point pivot(GetX(), GetY());
     line->Turn(angle, pivot);
+    updateBB();
 }
 
 void LineCollider::SetAngle(Angle angle)
@@ -348,6 +382,7 @@ void LineCollider::SetAngle(Angle angle)
     double length = distance(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
     line->Set(GetX(), GetY(),
               GetX() + length * cos(angle.GetR()), GetY() + length * sin(angle.GetR()));
+    updateBB();
 }
 
 
@@ -367,6 +402,7 @@ ChainCollider::ChainCollider(double* x_s, double* y_s, int num, double orig_x, d
         }
     }
     count = num;
+    ChainCollider::updateBB();
 }
 
 ChainCollider::~ChainCollider()
@@ -383,6 +419,29 @@ ChainCollider::~ChainCollider()
     delete[](points);
 }
 
+void ChainCollider::updateBB()    //Update bounding box
+{
+    double l = points[0]->GetX();
+    double r = points[0]->GetX();
+    double t = points[0]->GetY();
+    double b = points[0]->GetY();
+    for (int i = 1; i < count; i++)
+    {
+        if (points[i]->GetX() < l)
+            l = points[i]->GetX();
+        if (points[i]->GetX() > r)
+            r = points[i]->GetX();
+        if (points[i]->GetY() < b)
+            b = points[i]->GetY();
+        if (points[i]->GetY() > t)
+            t = points[i]->GetY();
+    }
+    top = t;
+    left = l;
+    bottom = b;
+    right = r;
+}
+
 void ChainCollider::update_eq()   //Update equations
 {
     for(int i=1; i<count; i++)    //Copy
@@ -393,7 +452,10 @@ void ChainCollider::update_eq()   //Update equations
 
 bool ChainCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
-    return other->CheckCollision(this);
+    if (CheckBBCollision(other))
+        return other->CheckCollision(this);
+    else
+        return false;
 }
 
 bool ChainCollider::CheckCollision(PointCollider* other)      //Collision with point
@@ -476,6 +538,7 @@ void ChainCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
         points[i]->Drag(dx, dy);
     }
     update_eq();
+    updateBB();
 }
 
 void ChainCollider::Drag(double dx, double dy)
@@ -495,6 +558,7 @@ void ChainCollider::Turn(Angle angle, Point& pivot)
         points[i]->Turn(angle, pivot);
     }
     update_eq();
+    updateBB();
 }
 
 void ChainCollider::Turn(Angle angle)
@@ -505,6 +569,7 @@ void ChainCollider::Turn(Angle angle)
         points[i]->Turn(angle, a);
     }
     update_eq();
+    updateBB();
 }
 
 void ChainCollider::SetAngle(Angle angle)
@@ -516,6 +581,7 @@ void ChainCollider::SetAngle(Angle angle)
         points[i]->Turn(angle, a);
     }
     update_eq();
+    updateBB();
 }
 
 
@@ -523,6 +589,7 @@ void ChainCollider::SetAngle(Angle angle)
 CircleCollider::CircleCollider(double _x, double _y, double _r) : Collider(_x, _y)
 {
     circle = new Circle(_x ,_y, _r);
+    CircleCollider::updateBB();
 }
 
 CircleCollider::~CircleCollider()
@@ -530,9 +597,20 @@ CircleCollider::~CircleCollider()
     delete circle;
 }
 
+void CircleCollider::updateBB()
+{
+    top = GetY() + circle->GetR();
+    bottom = GetY() - circle->GetR();
+    right = GetX() + circle->GetR();
+    left = GetX() - circle->GetR();
+}
+
 bool CircleCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
-    return other->CheckCollision(this);
+    if (CheckBBCollision(other))
+        return other->CheckCollision(this);
+    else
+        return false;
 }
 
 bool CircleCollider::CheckCollision(PointCollider* other)      //Collision with point
@@ -603,6 +681,26 @@ void CircleCollider::ShowCollider(QPainter* pntr)
     }
 }
 
+void CircleCollider::MoveTo(double _x, double _y)
+{
+    Point::MoveTo(_x, _y);
+    updateBB();
+}
+
+void CircleCollider::Drag(double dx, double dy)
+{
+    Point::Drag(dx, dy);
+    updateBB();
+}
+
+void CircleCollider::Turn(Angle angle, Point& pivot)
+{
+    Point::Turn(angle, pivot);
+    updateBB();
+}
+
+
+
 
 //=== PolygonCollider class realization ===
 PolygonCollider::PolygonCollider(double* x_s, double* y_s, int num, double orig_x = 0, double orig_y = 0) : Collider(orig_x, orig_y)
@@ -615,18 +713,49 @@ PolygonCollider::PolygonCollider(double* x_s, double* y_s, int num, double orig_
         orig_points[i] = new Point(x_s[i] - x, y_s[i] - y);
     }
     count = num;
+    PolygonCollider::updateBB();
 }
 
 PolygonCollider::~PolygonCollider()
 {
     for(int i=0; i<count; i++)
+    {
         delete(points[i]);
+        delete(orig_points[i]);
+    }
     delete[](points);
+    delete[](orig_points);
+}
+
+void PolygonCollider::updateBB()    //Update bounding box
+{
+    double l = points[0]->GetX();
+    double r = points[0]->GetX();
+    double t = points[0]->GetY();
+    double b = points[0]->GetY();
+    for (int i = 1; i < count; i++)
+    {
+        if (points[i]->GetX() < l)
+            l = points[i]->GetX();
+        if (points[i]->GetX() > r)
+            r = points[i]->GetX();
+        if (points[i]->GetY() < b)
+            b = points[i]->GetY();
+        if (points[i]->GetY() > t)
+            t = points[i]->GetY();
+    }
+    top = t;
+    left = l;
+    bottom = b;
+    right = r;
 }
 
 bool PolygonCollider::CheckCollision(Collider* other)           //Collision with unknown object
 {
-    return other->CheckCollision(this);
+    if (CheckBBCollision(other))
+        return other->CheckCollision(this);
+    else
+        return false;
 }
 
 bool PolygonCollider::CheckCollision(PointCollider* other)      //Collision with point
@@ -722,6 +851,7 @@ void PolygonCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
     {
         points[i]->Drag(dx, dy);
     }
+    updateBB();
 }
 
 void PolygonCollider::Drag(double dx, double dy)
@@ -731,6 +861,7 @@ void PolygonCollider::Drag(double dx, double dy)
     {
         points[i]->Drag(dx, dy);
     }
+    updateBB();
 }
 
 void PolygonCollider::Turn(Angle angle, Point& pivot)
@@ -739,6 +870,7 @@ void PolygonCollider::Turn(Angle angle, Point& pivot)
     {
         points[i]->Turn(angle, pivot);
     }
+    updateBB();
 }
 
 void PolygonCollider::Turn(Angle angle)
@@ -748,6 +880,7 @@ void PolygonCollider::Turn(Angle angle)
     {
         points[i]->Turn(angle, a);
     }
+    updateBB();
 }
 
 void PolygonCollider::SetAngle(Angle angle)
@@ -758,6 +891,7 @@ void PolygonCollider::SetAngle(Angle angle)
         points[i]->MoveTo(orig_points[i]->GetX() + x, orig_points[i]->GetY() + y);
         points[i]->Turn(angle, a);
     }
+    updateBB();
 }
 
 

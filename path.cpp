@@ -137,7 +137,7 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
             path->pts[i].c_r = temp_path[i].rA;
             path->pts[i].s_a = temp_path[i].aA;
             path->pts[i].e_a = temp_path[i].aB;
-            qDebug() << path->pts[i].s_a.GetD() << " " << path->pts[i].e_a.GetD();
+//            qDebug() << path->pts[i].s_a.GetD() << " " << path->pts[i].e_a.GetD();
         }
         path->pts[i].circle = temp_path[i].type == ARC_CIRCLE;
         path->pts[i].x = temp_path[i].B.GetX();
@@ -295,7 +295,7 @@ void Tank::ShowPath()   //Drawing path
             double ea = -16 * (path->pts[i].e_a.GetD() - path->pts[i].s_a.GetD());
             if (path->pts[i].direction < 0)
                 sa += 5760;
-            qDebug() << path->pts[i].s_a.GetD() << "|" << path->pts[i].e_a.GetD();
+//            qDebug() << path->pts[i].s_a.GetD() << "|" << path->pts[i].e_a.GetD();
             pntr.drawArc(path->pts[i].c_x - path->pts[i].c_r, path->pts[i].c_y - path->pts[i].c_r,
                          2*path->pts[i].c_r, 2*path->pts[i].c_r,
                          floor(sa), floor(ea));

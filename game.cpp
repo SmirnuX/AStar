@@ -1,4 +1,5 @@
 #include "game.h"
+#include <QTime>
 extern QPixmap* picture;
 extern EntityStack* stack;
 
@@ -246,7 +247,9 @@ void game::game_update()  //Function, called every frame
     double base_length = 100;
     double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
     double side = 2 * box->a * 0.8;
-
+    QTime start = QTime::currentTime();
+    QTime graph_end;
+    QTime path_end;
     if (toBuild)
     {
         //Path updating
@@ -267,16 +270,22 @@ void game::game_update()  //Function, called every frame
         }
 
         path_graph = build_graph(obst, visible->size+2);
+        graph_end = QTime::currentTime();
         path_graph->AStar();
         player->graph_to_path(path_graph);
+        path_end = QTime::currentTime();
 
-
-        for(int i = 0; i < visible->size+2; i++)
+        for(uint i = 0; i < visible->size+2; i++)
         {
             delete obst[i].point;
         }
         delete[] obst;
+        int delta1 = start.msecsTo(graph_end);
+        int delta2 = graph_end.msecsTo(path_end);
+        qDebug() << "Graph built in:" << delta1;
+        qDebug() << "Path built in:" << delta2;
     }
+
     if (follow)
     {
         if (path_graph != nullptr)

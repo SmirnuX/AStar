@@ -264,6 +264,16 @@ double sign(double a)   //1 if a >=0, -1 if a<0
         return -1;
 }
 
+double min(double a, double b)
+{
+    return (a<b)?a:b;
+}
+
+double max(double a, double b)
+{
+    return (a>b)?a:b;
+}
+
 bool almostEq(double a, double b, double eps)  //Are delta between a and b lesser then eps
 {
     if (a > b - eps && a < b + eps)
