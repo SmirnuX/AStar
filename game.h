@@ -28,6 +28,13 @@ extern bool SHOW_COLLIDERS;
 class Tank;
 class EntityStack;
 
+enum uimode{
+    NONE,   //Show no ui
+    COLLIDERS,  //Show collision masks
+    GRAPH,  //Show path graph
+    PATH    //Show built path
+};
+
 class game : public QMainWindow //Main window
 {
     Q_OBJECT
@@ -41,14 +48,13 @@ private:
     int target_y;
     bool PAUSE;
     bool UI_ACTIVE;
-    bool SHOW_PATH;
+    uimode UI_MODE;
     Ui_DebugMenu* Menu;
 public:
     Tank* player;  //Player tank
     Box* box;
     game(int w, int h, QWidget *parent = 0);
     ~game();
-
 
     QTimer* timer;
     bool event(QEvent* ev);    //Event handler

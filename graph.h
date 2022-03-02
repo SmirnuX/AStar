@@ -79,6 +79,7 @@ public:
     int end;
     bool IsWay();
     void Show();
+    void Show(int x, int y);
 
 };
 

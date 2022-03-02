@@ -393,9 +393,9 @@ void graph::Show()
             if (edges[i].chosen)
                 penn.setColor(QColor(0,255,0,160));
             else if (edges[i].passed)
-                penn.setColor(QColor(0,0,255,160));
+                penn.setColor(QColor(0,0,0,50));
             else
-                penn.setColor(QColor(255,0,0,30));
+                penn.setColor(QColor(0,0,0,30));
             pntr.setPen(penn);
             pntr.drawLine(edges[i].pA->point->GetX(), edges[i].pA->point->GetY(), edges[i].pB->point->GetX(), edges[i].pB->point->GetY());
         }
@@ -427,6 +427,104 @@ void graph::Show()
     for (uint i=0; i < vertices.size(); i++)
     {
         pntr.drawEllipse(vertices[i]->point->GetX(), vertices[i]->point->GetY(), 4, 4);
+    }
+}
+
+void graph::Show(int x, int y)  //Drawing graph with additional info
+{
+    QPainter pntr(picture);
+    QPen penn;
+    penn.setWidth(1);
+    int selected_edge = -1;
+    int selected_vertex = -1;
+    pntr.setPen(penn);
+    CircleCollider cursor(x, y, 4);
+    for (uint i=0; i < edges.size(); i++)
+    {
+        if (edges[i].type == LINEAR)
+        {
+            LineCollider edge_coll(edges[i].pA->point->GetX(), edges[i].pA->point->GetY(),
+                                   edges[i].pB->point->GetY(), edges[i].pB->point->GetY());
+            if (cursor.CheckCollision(&edge_coll) && selected_edge == -1)
+            {
+                selected_edge = i;
+                penn.setColor(QColor(0,255,255,160));
+            }
+            else if (edges[i].chosen)
+                penn.setColor(QColor(0,255,0,160));
+            else if (edges[i].passed)
+                penn.setColor(QColor(0,0,0,50));
+            else
+                penn.setColor(QColor(0,0,0,30));
+            pntr.setPen(penn);
+            pntr.drawLine(edges[i].pA->point->GetX(), edges[i].pA->point->GetY(), edges[i].pB->point->GetX(), edges[i].pB->point->GetY());
+        }
+        else
+        {
+            if (edges[i].chosen)
+            {
+                penn.setColor(QColor(0,255,0,160));
+                penn.setWidth(3);
+            }
+            else if (edges[i].passed)
+            {
+                penn.setColor(QColor(0,0,255,160));
+                penn.setWidth(1);
+            }
+            else
+            {
+                penn.setColor(QColor(255,0,0,30));
+                penn.setWidth(1);
+            }
+            pntr.setPen(penn);
+            double sa, ea;
+
+            sa = -5760.0 / (2 * M_PI) * edges[i].pA->angle.GetR();
+            ea = -5760.0 / (2 * M_PI) * (edges[i].pB->angle.GetR()-edges[i].pA->angle.GetR());
+            if (ea > 0)
+                ea -= 5760;
+            pntr.drawArc(edges[i].cx - edges[i].rA, edges[i].cy - edges[i].rA,
+                         2*edges[i].rA, 2*edges[i].rA,
+                         floor(sa), floor(ea));
+        }
+
+    }
+    penn.setColor(QColor(0,255,0,180));
+    pntr.setPen(penn);
+    for (uint i=0; i < vertices.size(); i++)
+    {
+        if (fabs(vertices[i]->point->GetX() - x) < 6 &&
+            fabs(vertices[i]->point->GetY() - y) < 6 && selected_vertex == -1)
+        {
+            selected_vertex = i;
+            penn.setColor(QColor(0, 255, 255));
+            penn.setWidth(2);
+            pntr.setPen(penn);
+            pntr.drawEllipse(vertices[i]->point->GetX() - 3, vertices[i]->point->GetY() - 3, 6, 6);
+        }
+        else
+        {
+            penn.setColor(QColor(0,255,0,180));
+            penn.setWidth(1);
+            pntr.setPen(penn);
+        }
+        pntr.drawEllipse(vertices[i]->point->GetX() - 2, vertices[i]->point->GetY() - 2, 4, 4);
+    }
+    pntr.drawEllipse(x - 2, y - 2, 4, 4);
+    penn.setWidth(2);
+    penn.setColor(QColor(0, 255, 255));
+    pntr.setPen(penn);
+    if (selected_edge != -1)
+    {
+        pntr.drawText(x + 50, y + 50,
+                      QString("Length: ") + QString::number(edges[selected_edge].length, 'f', 1));
+    }
+    if (selected_vertex != -1)
+    {
+        pntr.drawText(x + 50, y + 80,
+                      QString("Cost: ") + QString::number(vertices[selected_vertex]->cost, 'f', 1));
+        pntr.drawText(x + 50, y + 100,
+                      QString("Dist: ") + QString::number(vertices[selected_vertex]->dist, 'f', 1));
     }
 }
 

@@ -15,7 +15,6 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     target_x = 0;
     target_y = 0;
     SHOW_COLLIDERS = true;
-    SHOW_PATH = true;
     UI_ACTIVE = false;
     Menu = new Ui_DebugMenu(this);
     Menu->setupUi();
@@ -102,18 +101,27 @@ bool game::event(QEvent* ev)   //Event handler
         case Qt::Key_Shift:
             key[6]=true;
             break;
-        case Qt::Key_F1:
+        case Qt::Key_Escape:
+            UI_ACTIVE = !UI_ACTIVE;
+            if (UI_ACTIVE)
+                Menu->show();
+            else
             {
-                UI_ACTIVE = !UI_ACTIVE;
-                if (UI_ACTIVE)
-                    Menu->show();
-                else
-                {
-                    Menu->hide();
-                    this->setFocus();
-                }
-
+                Menu->hide();
+                this->setFocus();
             }
+            break;
+        case Qt::Key_F1:
+            UI_MODE = NONE;
+            break;
+        case Qt::Key_F2:
+            UI_MODE = COLLIDERS;
+            break;
+        case Qt::Key_F3:
+            UI_MODE = GRAPH;
+            break;
+        case Qt::Key_F4:
+            UI_MODE = PATH;
             break;
         }
         return true;
@@ -221,21 +229,26 @@ void game::game_update()  //Function, called every frame
         follow = true;
     }
 
+    SHOW_COLLIDERS = UI_MODE == COLLIDERS;
+    bool SHOW_PATH = UI_MODE == PATH;
     for (stack->Reset(); stack->current != NULL; stack->Next()) //Updating of every entity
     {
         stack->current->entity->EntityUpdate();
         //Collision check
-        EntityStackItem* saved = stack->current;
-        stack->Next();
-        for (; stack->current != NULL; stack->Next())
+        if (SHOW_COLLIDERS)
         {
-            if (saved->entity->collision_mask->CheckCollision(stack->current->entity->collision_mask))
+            EntityStackItem* saved = stack->current;
+            stack->Next();
+            for (; stack->current != NULL; stack->Next())
             {
-                saved->entity->collision_mask->collisions++;
-                stack->current->entity->collision_mask->collisions++;
+                if (saved->entity->collision_mask->CheckCollision(stack->current->entity->collision_mask))
+                {
+                    saved->entity->collision_mask->collisions++;
+                    stack->current->entity->collision_mask->collisions++;
+                }
             }
+            stack->current = saved;
         }
-        stack->current = saved;
         //Drawing every entity
         stack->current->entity->Show();
     }
@@ -307,6 +320,15 @@ void game::game_update()  //Function, called every frame
         pntr.setPen(QColor(0, 0, 255));
         pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
     }
+    if (UI_MODE == GRAPH)
+    {
+        QPoint mouse_pos = mapFromGlobal( QCursor::pos());
+        path_graph->Show(mouse_pos.x(), mouse_pos.y());
+        QPainter pntr(picture);
+        pntr.setPen(QColor(255,0,0));
+        pntr.setPen(QColor(0, 0, 255));
+        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
+    }
     update();
 }
 
@@ -323,8 +345,6 @@ int game::GetH()
 
 void game::uiUpdate()   //UI update
 {
-    SHOW_COLLIDERS = Menu->ShowCollisions->isChecked();
-    SHOW_PATH = Menu->ShowPaths->isChecked();
     PAUSE = Menu->Pause->isChecked();
 
     //List of entities
