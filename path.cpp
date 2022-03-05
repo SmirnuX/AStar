@@ -51,7 +51,7 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
                     }
                     temp_edge.type = ARC_CIRCLE;
                     temp_edge.direction = dir;
-                    temp_edge.rA = gr->edges[i].rA;
+                    temp_edge.r = gr->edges[i].r;
                     temp_edge.cx = gr->edges[i].cx;
                     temp_edge.cy = gr->edges[i].cy;
                 }
@@ -98,11 +98,11 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         {
             if (temp_path[i].type == ARC_CIRCLE)
             {
-                max_spd = 2 * temp_path[i].rA * sin(rot_speed.GetR()/2); //V = 2 * R * sin (max_rot / 2) - max speed you can stay on arc with
+                max_spd = 2 * temp_path[i].r * sin(rot_speed.GetR()/2); //V = 2 * R * sin (max_rot / 2) - max speed you can stay on arc with
             }
             else if (temp_path[i-1].type == ARC_CIRCLE)
             {
-                max_spd = 2 * temp_path[i-1].rA * sin(rot_speed.GetR()/2);
+                max_spd = 2 * temp_path[i-1].r * sin(rot_speed.GetR()/2);
             }
             else
                 max_spd = max_speed;    //Should never happen
@@ -134,7 +134,7 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         {
             path->pts[i].c_x = temp_path[i].cx;
             path->pts[i].c_y = temp_path[i].cy;
-            path->pts[i].c_r = temp_path[i].rA;
+            path->pts[i].c_r = temp_path[i].r;
             path->pts[i].s_a = temp_path[i].aA;
             path->pts[i].e_a = temp_path[i].aB;
 //            qDebug() << path->pts[i].s_a.GetD() << " " << path->pts[i].e_a.GetD();

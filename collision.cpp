@@ -185,6 +185,14 @@ void PointCollider::ShowCollider(QPainter* pntr)  //Drawing collider
     }
 }
 
+obstacle PointCollider::GetOutline(double threshold)  //Get graph to ride round this object
+{
+    obstacle res;
+    res.shape = POINT;
+    res.point = new Point(GetX(), GetY());
+    return res;
+}
+
 
 //=== LineCollider realization ===
 LineCollider::LineCollider(double x1, double y1, double x2, double y2):Collider(x1 ,y1)
@@ -385,6 +393,44 @@ void LineCollider::SetAngle(Angle angle)
     updateBB();
 }
 
+obstacle LineCollider::GetOutline(double threshold)  //Get graph to ride round this object
+{
+    obstacle res;
+    res.shape = POLYGON;
+    res.outline = new edge[4];  //Two lines and two arcs (==)
+    Angle dir = direction_to_point(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
+    //Arc around first point
+    res.outline[0].type = ARC_CIRCLE;
+    res.outline[0].r = threshold;
+    res.outline[0].cx = line->GetMinX();
+    res.outline[0].cy = line->GetMinY();
+    res.outline[0].aA = dir.normalL();
+    res.outline[0].aB = dir.normalR();
+    res.outline[0].direction = -1;
+    //First parallel line
+    res.outline[1].type = LINEAR;
+    res.outline[1].A = Point(line->GetMinX() + threshold * cos(dir.normalR().GetR()),
+                             line->GetMinY() + threshold * sin(dir.normalR().GetR()));
+    res.outline[1].B = Point(line->GetMaxX() + threshold * cos(dir.normalR().GetR()),
+                             line->GetMaxY() + threshold * sin(dir.normalR().GetR()));
+    //Arc around second point
+    res.outline[2].type = ARC_CIRCLE;
+    res.outline[2].r = threshold;
+    res.outline[2].cx = line->GetMaxX();
+    res.outline[2].cy = line->GetMaxY();
+    res.outline[2].aA = dir.normalR();
+    res.outline[2].aB = dir.normalL();
+    res.outline[2].direction = -1;
+    //Second parallel line
+    res.outline[3].type = LINEAR;
+    res.outline[3].A = Point(line->GetMaxX() + threshold * cos(dir.normalL().GetR()),
+                             line->GetMaxY() + threshold * sin(dir.normalL().GetR()));
+    res.outline[3].B = Point(line->GetMinX() + threshold * cos(dir.normalL().GetR()),
+                             line->GetMinY() + threshold * sin(dir.normalL().GetR()));
+
+    return res;
+}
+
 
 //=== ChainCollider class realization ===
 ChainCollider::ChainCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y) : Collider(orig_x, orig_y)
@@ -582,6 +628,47 @@ void ChainCollider::SetAngle(Angle angle)
     }
     update_eq();
     updateBB();
+}
+
+obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round this object
+{
+    obstacle res;
+    res.shape = POLYGON;
+    res.outline = new edge[count + 2 * (count-1)];  //N arcs and 2(N-1) lines
+
+
+
+    Angle dir = direction_to_point(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
+    //Arc around first point
+    res.outline[0].type = ARC_CIRCLE;
+    res.outline[0].r = threshold;
+    res.outline[0].cx = line->GetMinX();
+    res.outline[0].cy = line->GetMinY();
+    res.outline[0].aA = dir.normalL();
+    res.outline[0].aB = dir.normalR();
+    res.outline[0].direction = -1;
+    //First parallel line
+    res.outline[1].type = LINEAR;
+    res.outline[1].A = Point(line->GetMinX() + threshold * cos(dir.normalR().GetR()),
+                             line->GetMinY() + threshold * sin(dir.normalR().GetR()));
+    res.outline[1].B = Point(line->GetMaxX() + threshold * cos(dir.normalR().GetR()),
+                             line->GetMaxY() + threshold * sin(dir.normalR().GetR()));
+    //Arc around second point
+    res.outline[2].type = ARC_CIRCLE;
+    res.outline[2].r = threshold;
+    res.outline[2].cx = line->GetMaxX();
+    res.outline[2].cy = line->GetMaxY();
+    res.outline[2].aA = dir.normalR();
+    res.outline[2].aB = dir.normalL();
+    res.outline[2].direction = -1;
+    //Second parallel line
+    res.outline[3].type = LINEAR;
+    res.outline[3].A = Point(line->GetMaxX() + threshold * cos(dir.normalL().GetR()),
+                             line->GetMaxY() + threshold * sin(dir.normalL().GetR()));
+    res.outline[3].B = Point(line->GetMinX() + threshold * cos(dir.normalL().GetR()),
+                             line->GetMinY() + threshold * sin(dir.normalL().GetR()));
+
+    return res;
 }
 
 

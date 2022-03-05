@@ -102,7 +102,7 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
                         continue;
                     CircleCollider crc(objects[z].point->GetX(),
                                        objects[z].point->GetY(),
-                                       objects[z].rA);
+                                       objects[z].r);
                     if (lin.CheckCollision(&crc))
                     {
                         inter = true;
@@ -201,7 +201,7 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
         arc.type = ARC_CIRCLE;
         arc.cx = objects[i].point->GetX();
         arc.cy = objects[i].point->GetY();
-        arc.rA = objects[i].rA;
+        arc.r = objects[i].r;
 
         for (int j = 0; j < n; j++) //Looking for every vertex on this obstacle
         {
@@ -212,14 +212,14 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
             //Checking for intersection with other circles
             bool intersec = false;
             CircleCollider ptA_c(objects[i].point->GetX(),
-                                objects[i].point->GetY(), arc.rA);
+                                objects[i].point->GetY(), arc.r);
             for (int k = 0; k < count; k++)
             {
                 if (objects[k].shape != CIRCLE || k == i)
                     continue;
                 CircleCollider cr_c(objects[k].point->GetX(),
                                     objects[k].point->GetY(),
-                                    objects[k].rA);
+                                    objects[k].r);
                 if (ptA_c.CheckCollision(&cr_c))
                 {
                     //If there is collision - looking for angle of collision
@@ -245,9 +245,9 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
             arc.pA = brothers[j];
             arc.pB = brothers[next];
             if (brothers[next]->angle.GetR() < brothers[j]->angle.GetR())
-                arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.rA;
+                arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.r;
             else
-                arc.length = fabs((brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.rA);
+                arc.length = fabs((brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.r);
             result->edges.push_back(arc);
         }
         //Clearing
@@ -414,8 +414,8 @@ void graph::Show()
             ea = -5760.0 / (2 * M_PI) * (edges[i].pB->angle.GetR()-edges[i].pA->angle.GetR());
             if (ea > 0)
                 ea -= 5760;
-            pntr.drawArc(edges[i].cx - edges[i].rA, edges[i].cy - edges[i].rA,
-                         2*edges[i].rA, 2*edges[i].rA,
+            pntr.drawArc(edges[i].cx - edges[i].r, edges[i].cy - edges[i].r,
+                         2*edges[i].r, 2*edges[i].r,
                          floor(sa), floor(ea));
         }
         pntr.drawText((int)(edges[i].pA->point->GetX() + (edges[i].pB->point->GetX() - edges[i].pA->point->GetX())/2), //Отрисовка посередине
@@ -483,8 +483,8 @@ void graph::Show(int x, int y)  //Drawing graph with additional info
             ea = -5760.0 / (2 * M_PI) * (edges[i].pB->angle.GetR()-edges[i].pA->angle.GetR());
             if (ea > 0)
                 ea -= 5760;
-            pntr.drawArc(edges[i].cx - edges[i].rA, edges[i].cy - edges[i].rA,
-                         2*edges[i].rA, 2*edges[i].rA,
+            pntr.drawArc(edges[i].cx - edges[i].r, edges[i].cy - edges[i].r,
+                         2*edges[i].r, 2*edges[i].r,
                          floor(sa), floor(ea));
         }
 
@@ -555,7 +555,7 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
     double dist2 = distance2(*(A->point), *(B->point));
     double dist = sqrt(dist2);
     struct temp_edges count;
-    if (dist < fabs(A->rA - B->rA)) //If one circle contains another - 0 lines
+    if (dist < fabs(A->r - B->r)) //If one circle contains another - 0 lines
     {
         count.temp_edges_count = 0;
         count.temp_vertices_count = 0;
@@ -568,20 +568,20 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
     double angle = safe_acos((B->point->GetX() - A->point->GetX())/dist);   //Angle between circles
     if ((B->point->GetY() - A->point->GetY()) < 0)
         angle = 2*M_PI - angle;
-    double outer_angle = 2 * safe_acos(-fabs(A->rA - B->rA) / dist);  //Angle between outer tangents
+    double outer_angle = 2 * safe_acos(-fabs(A->r - B->r) / dist);  //Angle between outer tangents
 
     //Adding vertices
-    verts[0] = add_vert(A->point->GetX() + A->rA * cos(angle+outer_angle/2),
-                        A->point->GetY() + A->rA * sin(angle+outer_angle/2),
+    verts[0] = add_vert(A->point->GetX() + A->r * cos(angle+outer_angle/2),
+                        A->point->GetY() + A->r * sin(angle+outer_angle/2),
                         A, angle+outer_angle/2);
-    verts[1] = add_vert(B->point->GetX() + B->rA * cos(angle+outer_angle/2),
-                        B->point->GetY() + B->rA * sin(angle+outer_angle/2),
+    verts[1] = add_vert(B->point->GetX() + B->r * cos(angle+outer_angle/2),
+                        B->point->GetY() + B->r * sin(angle+outer_angle/2),
                         B, angle+outer_angle/2);
-    verts[2] = add_vert(A->point->GetX() + A->rA * cos(angle-outer_angle/2),
-                        A->point->GetY() + A->rA * sin(angle-outer_angle/2),
+    verts[2] = add_vert(A->point->GetX() + A->r * cos(angle-outer_angle/2),
+                        A->point->GetY() + A->r * sin(angle-outer_angle/2),
                         A, angle-outer_angle/2);
-    verts[3] = add_vert(B->point->GetX() + B->rA * cos(angle-outer_angle/2),
-                        B->point->GetY() + B->rA * sin(angle-outer_angle/2),
+    verts[3] = add_vert(B->point->GetX() + B->r * cos(angle-outer_angle/2),
+                        B->point->GetY() + B->r * sin(angle-outer_angle/2),
                         B, angle-outer_angle/2);
 
     //Adding edges
@@ -598,25 +598,25 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
     line.length = distance(*(line.pA->point), *(line.pB->point));
     edges[1] = line;
 
-    if (dist > (A->rA + B->rA)) //If circles dont intersect
+    if (dist > (A->r + B->r)) //If circles dont intersect
     {
 
         count.temp_edges_count = 4;
         count.temp_vertices_count = 8;
 
-        double inner_angle = safe_acos((A->rA + B->rA) / dist);  //Angle between inner tangents
-        verts[4] = add_vert(A->point->GetX() + A->rA * cos(angle+inner_angle),
-                                 A->point->GetY() + A->rA * sin(angle+inner_angle),
+        double inner_angle = safe_acos((A->r + B->r) / dist);  //Angle between inner tangents
+        verts[4] = add_vert(A->point->GetX() + A->r * cos(angle+inner_angle),
+                                 A->point->GetY() + A->r * sin(angle+inner_angle),
                                  A, angle+inner_angle);
-        verts[5] = add_vert(B->point->GetX() + B->rA * cos(M_PI+angle+inner_angle),
-                                 B->point->GetY() + B->rA * sin(M_PI+angle+inner_angle),
+        verts[5] = add_vert(B->point->GetX() + B->r * cos(M_PI+angle+inner_angle),
+                                 B->point->GetY() + B->r * sin(M_PI+angle+inner_angle),
                                  B, M_PI+angle+inner_angle);
 
-        verts[6] = add_vert(A->point->GetX() + A->rA * cos(angle-inner_angle),
-                                 A->point->GetY() + A->rA * sin(angle-inner_angle),
+        verts[6] = add_vert(A->point->GetX() + A->r * cos(angle-inner_angle),
+                                 A->point->GetY() + A->r * sin(angle-inner_angle),
                                  A, angle-inner_angle);
-        verts[7] = add_vert(B->point->GetX() + B->rA * cos(M_PI+angle-inner_angle),
-                                 B->point->GetY() + B->rA * sin(M_PI+angle-inner_angle),
+        verts[7] = add_vert(B->point->GetX() + B->r * cos(M_PI+angle-inner_angle),
+                                 B->point->GetY() + B->r * sin(M_PI+angle-inner_angle),
                                  B, M_PI+angle-inner_angle);
 
         //Adding inner edges
@@ -659,17 +659,17 @@ struct temp_edges get_edges_point_to_circle(struct vertex** verts, struct edge* 
     double angle = safe_acos((circle->point->GetX() - pt->point->GetX())/dist);
     if ((circle->point->GetY() - pt->point->GetY()) < 0)
         angle = 2*M_PI - angle;
-    double outer_angle = 2 * safe_acos(circle->rA / dist);  //Angle between outer tangents
+    double outer_angle = 2 * safe_acos(circle->r / dist);  //Angle between outer tangents
 
     verts[0] = add_vert(pt->point->GetX(),
                              pt->point->GetY(), pt);
     verts[1] = add_vert(pt->point->GetX(),
                              pt->point->GetY(), pt);
-    verts[2] = add_vert(circle->point->GetX() + circle->rA * cos(M_PI+angle-outer_angle/2),
-                             circle->point->GetY() + circle->rA * sin(M_PI+angle-outer_angle/2),
+    verts[2] = add_vert(circle->point->GetX() + circle->r * cos(M_PI+angle-outer_angle/2),
+                             circle->point->GetY() + circle->r * sin(M_PI+angle-outer_angle/2),
                              circle, M_PI+angle-outer_angle/2);
-    verts[3] = add_vert(circle->point->GetX() + circle->rA * cos(M_PI+angle+outer_angle/2),
-                             circle->point->GetY() + circle->rA * sin(M_PI+angle+outer_angle/2),
+    verts[3] = add_vert(circle->point->GetX() + circle->r * cos(M_PI+angle+outer_angle/2),
+                             circle->point->GetY() + circle->r * sin(M_PI+angle+outer_angle/2),
                              circle, M_PI+angle+outer_angle/2);
     struct edge line;
     line.chosen = false;

@@ -278,7 +278,7 @@ void game::game_update()  //Function, called every frame
             obst[i].shape = CIRCLE;
             obst[i].point = new Point(visible->current->entity->GetX(),
                                       visible->current->entity->GetY());
-            obst[i].rA = threshold+side;
+            obst[i].r = threshold+side;
             i++;
         }
 

@@ -3,65 +3,21 @@
 
 #define MAX_TEMP_EDGES 4
 #define MAX_TEMP_VERTS 8
-constexpr uint MAX_PATH_COST = 1000000;
+constexpr unsigned int MAX_PATH_COST = 1000000;
 
 #include "objects.h"
 #include "collision.h"
-
+#include "graph_struct.h"
 
 extern QPixmap* picture;
 
-enum EDGE_TYPE {LINEAR,         //Straight line
-                ARC_CIRCLE,     //Arc on circle
-                ARC_ELLIPSE};   //Arc on ellipse [NOT IMPLEMENTED]
 
-enum OBJ_SHAPE {POINT,      //No obstacle - used for start and end points
-                CIRCLE,     //Circle
-                ELLIPSE};   //Ellipse [NOT IMPLEMENTED]
 
-struct obstacle
-{
-    OBJ_SHAPE shape;
-    Point* point;
-    double rA, rB;
-};
+/* GET OBSTACLE OUTLINE
+ * GET BITANGENTS
+ * CHECK FOR INTERSECTIONS BETWEEN OBSTACLES
+ * */
 
-struct vertex
-{
-    Point* point;
-    obstacle* parent;   //Obstacle, where point is lied on
-    Angle angle;       //Angle of vector between center of parent and vertex
-    double cost;
-    double dist;    //Distance to end point
-};
-
-struct graph_cmp
-{
-    vertex* ptr;
-
-    graph_cmp(vertex* _ptr);
-    graph_cmp();
-};
-
-struct fnctor
-{
-    bool operator() (graph_cmp const& lhs, graph_cmp const& rhs);   //Priority comparing
-};
-
-struct edge
-{
-    EDGE_TYPE type; //Type of edge
-    vertex *pA, *pB;   //Vertices, connected by that edge
-    Point A, B;   //Star and end points
-
-    Angle aA, aB;  //Start and end angles
-    double direction;   //Direction of an arc - 1 - clockwise, -1 - counter-clockwise
-    double rA, rB;  //Radiuses
-    double cx, cy;  //Center coords
-    double length;  //Length of edge
-    bool chosen;    //Is this edge part of path
-    bool passed;    //Was this edge already passed
-};
 
 class graph
 {

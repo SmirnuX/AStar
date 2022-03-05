@@ -2,6 +2,7 @@
 #define COLLISION_H
 
 #include "objects.h"
+#include "graph_struct.h"
 #include <limits>
 
 extern QPixmap* picture;
@@ -35,6 +36,8 @@ public:
 
     virtual void SetAngle(Angle _angle);
 
+    virtual obstacle GetOutline(double treshold) = 0;  //Get graph to ride round this object
+
 };
 
 class PointCollider : public Collider
@@ -51,7 +54,9 @@ public:
     bool CheckCollision(ChainCollider* other);      //Collision with chain
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
-    void ShowCollider(QPainter *pntr = nullptr);                            //Drawing collision mask
+    void ShowCollider(QPainter *pntr = nullptr);    //Drawing collision mask
+
+    obstacle GetOutline(double treshold);  //Get graph to ride round this object
 };
 
 class LineCollider : public Collider
@@ -77,6 +82,8 @@ public:
     void Turn(Angle angle, Point& pivot);
     void Turn(Angle angle); //Rotate relative to left point
     void SetAngle(Angle angle);
+
+    obstacle GetOutline(double treshold);  //Get graph to ride round this object
 };
 
 class ChainCollider : public Collider
@@ -106,6 +113,8 @@ public:
     void Turn(Angle angle, Point& pivot);
     void Turn(Angle angle); //Rotate relative to left point
     void SetAngle(Angle angle);
+
+    obstacle GetOutline(double treshold);  //Get graph to ride round this object
 };
 
 class CircleCollider : public Collider
@@ -129,6 +138,8 @@ public:
     void MoveTo(double _x, double _y);
     void Drag(double dx, double dy);
     void Turn(Angle angle, Point& pivot);
+
+    obstacle GetOutline(double treshold);  //Get graph to ride round this object
 };
 
 class PolygonCollider : public Collider
@@ -156,6 +167,8 @@ public:
     void Turn(Angle angle, Point& pivot);
     void Turn(Angle angle);
     void SetAngle(Angle angle);
+
+    obstacle GetOutline(double treshold);  //Get graph to ride round this object
 };
 
 

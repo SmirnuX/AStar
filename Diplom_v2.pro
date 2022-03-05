@@ -24,6 +24,7 @@ HEADERS += \
     collision.h \
     game.h \
     graph.h \
+    graph_struct.h \
     list.h \
     objects.h \
     tanks.h \
