@@ -185,7 +185,7 @@ void PointCollider::ShowCollider(QPainter* pntr)  //Drawing collider
     }
 }
 
-obstacle PointCollider::GetOutline(double threshold)  //Get graph to ride round this object
+obstacle PointCollider::GetOutline(double threshold)  //Get graph to ride around this object
 {
     obstacle res;
     res.shape = POINT;
@@ -397,6 +397,7 @@ obstacle LineCollider::GetOutline(double threshold)  //Get graph to ride round t
 {
     obstacle res;
     res.shape = POLYGON;
+    res.num = 4;
     res.outline = new edge[4];  //Two lines and two arcs (==)
     Angle dir = direction_to_point(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
     //Arc around first point
@@ -634,40 +635,155 @@ obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round 
 {
     obstacle res;
     res.shape = POLYGON;
+    if (count == 2) //If chain consists of one segment
+    {
+        LineCollider lc(points[0]->GetX(), points[0]->GetY(), points[1]->GetX(), points[1]->GetY());
+        return lc.GetOutline(threshold);
+    }
     res.outline = new edge[count + 2 * (count-1)];  //N arcs and 2(N-1) lines
+    res.num = count + 2 * (count-1);
 
-
-
-    Angle dir = direction_to_point(line->GetMinX(), line->GetMinY(), line->GetMaxX(), line->GetMaxY());
-    //Arc around first point
+    //First arc
+    Angle dir = direction_to_point(points[0]->GetX(), points[0]->GetY(), points[1]->GetX(), points[1]->GetY());
     res.outline[0].type = ARC_CIRCLE;
     res.outline[0].r = threshold;
-    res.outline[0].cx = line->GetMinX();
-    res.outline[0].cy = line->GetMinY();
+    res.outline[0].cx = points[0]->GetX();
+    res.outline[0].cy = points[0]->GetY();
     res.outline[0].aA = dir.normalL();
     res.outline[0].aB = dir.normalR();
     res.outline[0].direction = -1;
-    //First parallel line
-    res.outline[1].type = LINEAR;
-    res.outline[1].A = Point(line->GetMinX() + threshold * cos(dir.normalR().GetR()),
-                             line->GetMinY() + threshold * sin(dir.normalR().GetR()));
-    res.outline[1].B = Point(line->GetMaxX() + threshold * cos(dir.normalR().GetR()),
-                             line->GetMaxY() + threshold * sin(dir.normalR().GetR()));
-    //Arc around second point
-    res.outline[2].type = ARC_CIRCLE;
-    res.outline[2].r = threshold;
-    res.outline[2].cx = line->GetMaxX();
-    res.outline[2].cy = line->GetMaxY();
-    res.outline[2].aA = dir.normalR();
-    res.outline[2].aB = dir.normalL();
-    res.outline[2].direction = -1;
-    //Second parallel line
-    res.outline[3].type = LINEAR;
-    res.outline[3].A = Point(line->GetMaxX() + threshold * cos(dir.normalL().GetR()),
-                             line->GetMaxY() + threshold * sin(dir.normalL().GetR()));
-    res.outline[3].B = Point(line->GetMinX() + threshold * cos(dir.normalL().GetR()),
-                             line->GetMinY() + threshold * sin(dir.normalL().GetR()));
 
+    int j = 1;  //Index of next edge
+
+    //Create two parallel lines for first segment
+    Point r1 = Point(   points[0]->GetX() + threshold * cos(dir.normalR().GetR()),
+                        points[0]->GetY() + threshold * sin(dir.normalR().GetR()));
+    Point r2 = Point(   points[1]->GetX() + threshold * cos(dir.normalR().GetR()),
+                        points[1]->GetY() + threshold * sin(dir.normalR().GetR()));
+
+    Point l1 = Point(   points[0]->GetX() + threshold * cos(dir.normalL().GetR()),
+                        points[0]->GetY() + threshold * sin(dir.normalL().GetR()));
+    Point l2 = Point(   points[1]->GetX() + threshold * cos(dir.normalL().GetR()),
+                        points[1]->GetY() + threshold * sin(dir.normalL().GetR()));
+    Point l3, r3, l4, r4;
+
+    //Arcs and lines between i-1 and i vertices
+    for (int i = 2; i < count; i++)   //Up to 3*(count-2)
+    {   
+        Angle dir2 = direction_to_point(points[i-1]->GetX(), points[i-1]->GetY(), points[i]->GetX(), points[i]->GetY());
+        r3 = Point( points[i-1]->GetX() + threshold * cos(dir2.normalR().GetR()),
+                    points[i-1]->GetY() + threshold * sin(dir2.normalR().GetR()));
+        l3 = Point( points[i-1]->GetX() + threshold * cos(dir2.normalL().GetR()),
+                    points[i-1]->GetY() + threshold * sin(dir2.normalL().GetR()));
+        r4 = Point( points[i]->GetX() + threshold * cos(dir2.normalR().GetR()),
+                    points[i]->GetY() + threshold * sin(dir2.normalR().GetR()));
+        l4 = Point( points[i]->GetX() + threshold * cos(dir2.normalL().GetR()),
+                    points[i]->GetY() + threshold * sin(dir2.normalL().GetR()));
+        //Check if there is intersection on right side
+        SIDE intersec = FORWARD;   //0 - there is no intersection (segments are parallel), 1 - left segments are intersected, -1 - right
+        double alpha = dir.GetR();
+        double beta = dir2.GetR();
+        if (beta > M_PI)
+        {
+            beta = 2 * M_PI - beta;
+        }
+        if (alpha > M_PI) //If first segment is headed down
+        {
+            alpha = 2 * M_PI - alpha;
+            if (almostEq(alpha, beta))
+                intersec = FORWARD;   //[Don't actually need it here, but for better readability]
+            else if (alpha > beta)
+                intersec = LEFT;
+            else
+                intersec = RIGHT;
+        }
+        else    //If first segment is headed upside
+        {
+            if (almostEq(alpha, beta))
+                intersec = FORWARD;   //[Don't actually need it here, but for better readability]
+            else if (alpha < beta)
+                intersec = LEFT;
+            else
+                intersec = RIGHT;
+        }
+        Line line_1;
+        Line line_2;
+        Point* tmp = nullptr;
+        //Adding arc (if there is any intersection)
+        switch (intersec)
+        {
+        case FORWARD:  //Adding two edges instead of three [Can be optimized to 2 instead of 5, but due to low probability it doesnt make sense]
+            res.num--;
+            break;
+        case LEFT:  //Adding arc and calculating intersection
+            //Calculating intersection
+            line_1 = Line(l1, l2);
+            line_2 = Line(l3, l4);
+            tmp = intersect2d(line_1.a, line_1.b, line_1.c, line_2.a, line_2.b, line_2.c);
+            assert(tmp!=nullptr);
+            l2 = *tmp;
+            l3 = *tmp;
+            //Adding arc to the right
+            res.outline[j].type = ARC_CIRCLE;
+            res.outline[j].r = threshold;
+            res.outline[j].cx = points[i-1]->GetX();
+            res.outline[j].cy = points[i-1]->GetY();
+            res.outline[j].aA = dir.normalR();
+            res.outline[j].aB = dir2.normalR();
+            res.outline[j].direction = 1;
+            j++;
+            break;
+        case RIGHT:
+            //Calculating intersection
+            line_1 = Line(r1, r2);
+            line_2 = Line(r3, r4);
+            tmp = intersect2d(line_1.a, line_1.b, line_1.c, line_2.a, line_2.b, line_2.c);
+            assert(tmp!=nullptr);
+            r2 = *tmp;
+            r3 = *tmp;
+            //Adding arc to the right
+            res.outline[j].type = ARC_CIRCLE;
+            res.outline[j].r = threshold;
+            res.outline[j].cx = points[i-1]->GetX();
+            res.outline[j].cy = points[i-1]->GetY();
+            res.outline[j].aA = dir.normalL();
+            res.outline[j].aB = dir2.normalL();
+            res.outline[j].direction = -1;
+            j++;
+            break;
+        }
+        //Adding linear edges
+        res.outline[j].type = LINEAR;
+        res.outline[j].A = l1;
+        res.outline[j].B = l2;
+        res.outline[j+1].type = LINEAR;
+        res.outline[j+1].A = r1;
+        res.outline[j+1].B = r2;
+        j+=2;
+        r1 = r3;
+        l1 = l3;
+        r2 = r4;
+        l2 = l4;
+        dir = dir2;
+    }
+    //Last two lines
+    res.outline[j].type = LINEAR;
+    res.outline[j].A = l1;
+    res.outline[j].B = l2;
+    res.outline[j+1].type = LINEAR;
+    res.outline[j+1].A = r1;
+    res.outline[j+1].B = r2;
+
+    //Last arc
+    res.outline[j+2].type = ARC_CIRCLE;
+    res.outline[j+2].r = threshold;
+    res.outline[j+2].cx = points[count-1]->GetX();
+    res.outline[j+2].cy = points[count-1]->GetY();
+    res.outline[j+2].aA = dir.normalR();
+    res.outline[j+2].aB = dir.normalL();
+    res.outline[j+2].direction = 1;
+
+    assert(j+2 == res.num);
     return res;
 }
 
@@ -784,6 +900,15 @@ void CircleCollider::Turn(Angle angle, Point& pivot)
 {
     Point::Turn(angle, pivot);
     updateBB();
+}
+
+obstacle CircleCollider::GetOutline(double threshold)  //Get graph to ride round this object
+{
+    obstacle res;
+    res.shape = CIRCLE;
+    res.point = new Point(GetX(), GetY());
+    res.r = this->circle->GetR() + threshold;
+    return res;
 }
 
 
@@ -979,6 +1104,162 @@ void PolygonCollider::SetAngle(Angle angle)
         points[i]->Turn(angle, a);
     }
     updateBB();
+}
+
+obstacle PolygonCollider::GetOutline(double threshold)  //Get graph to ride round this object
+{
+    obstacle res;
+    res.shape = POLYGON;
+    if (count == 2) //If chain consists of one segment
+    {
+        LineCollider lc(points[0]->GetX(), points[0]->GetY(), points[1]->GetX(), points[1]->GetY());
+        return lc.GetOutline(threshold);
+    }
+    res.outline = new edge[count + 2 * (count-1)];  //N arcs and 2(N-1) lines
+    res.num = count + 2 * (count-1);
+
+    //First arc
+    Angle dir = direction_to_point(points[0]->GetX(), points[0]->GetY(), points[1]->GetX(), points[1]->GetY());
+    res.outline[0].type = ARC_CIRCLE;
+    res.outline[0].r = threshold;
+    res.outline[0].cx = points[0]->GetX();
+    res.outline[0].cy = points[0]->GetY();
+    res.outline[0].aA = dir.normalL();
+    res.outline[0].aB = dir.normalR();
+    res.outline[0].direction = -1;
+
+    int j = 1;  //Index of next edge
+
+    //Create two parallel lines for first segment
+    Point r1 = Point(   points[0]->GetX() + threshold * cos(dir.normalR().GetR()),
+                        points[0]->GetY() + threshold * sin(dir.normalR().GetR()));
+    Point r2 = Point(   points[1]->GetX() + threshold * cos(dir.normalR().GetR()),
+                        points[1]->GetY() + threshold * sin(dir.normalR().GetR()));
+
+    Point l1 = Point(   points[0]->GetX() + threshold * cos(dir.normalL().GetR()),
+                        points[0]->GetY() + threshold * sin(dir.normalL().GetR()));
+    Point l2 = Point(   points[1]->GetX() + threshold * cos(dir.normalL().GetR()),
+                        points[1]->GetY() + threshold * sin(dir.normalL().GetR()));
+    Point l3, r3, l4, r4;
+
+    //Arcs and lines between i-1 and i vertices
+    for (int i = 2; i < count; i++)   //Up to 3*(count-2)
+    {
+        Angle dir2 = direction_to_point(points[i-1]->GetX(), points[i-1]->GetY(), points[i]->GetX(), points[i]->GetY());
+        r3 = Point( points[i-1]->GetX() + threshold * cos(dir2.normalR().GetR()),
+                    points[i-1]->GetY() + threshold * sin(dir2.normalR().GetR()));
+        l3 = Point( points[i-1]->GetX() + threshold * cos(dir2.normalL().GetR()),
+                    points[i-1]->GetY() + threshold * sin(dir2.normalL().GetR()));
+        r4 = Point( points[i]->GetX() + threshold * cos(dir2.normalR().GetR()),
+                    points[i]->GetY() + threshold * sin(dir2.normalR().GetR()));
+        l4 = Point( points[i]->GetX() + threshold * cos(dir2.normalL().GetR()),
+                    points[i]->GetY() + threshold * sin(dir2.normalL().GetR()));
+        //Check if there is intersection on right side
+        SIDE intersec = FORWARD;   //0 - there is no intersection (segments are parallel), 1 - left segments are intersected, -1 - right
+        double alpha = dir.GetR();
+        double beta = dir2.GetR();
+        if (beta > M_PI)
+        {
+            beta = 2 * M_PI - beta;
+        }
+        if (alpha > M_PI) //If first segment is headed down
+        {
+            alpha = 2 * M_PI - alpha;
+            if (almostEq(alpha, beta))
+                intersec = FORWARD;   //[Don't actually need it here, but for better readability]
+            else if (alpha > beta)
+                intersec = LEFT;
+            else
+                intersec = RIGHT;
+        }
+        else    //If first segment is headed upside
+        {
+            if (almostEq(alpha, beta))
+                intersec = FORWARD;   //[Don't actually need it here, but for better readability]
+            else if (alpha < beta)
+                intersec = LEFT;
+            else
+                intersec = RIGHT;
+        }
+        Line line_1;
+        Line line_2;
+        Point* tmp = nullptr;
+        //Adding arc (if there is any intersection)
+        switch (intersec)
+        {
+        case FORWARD:  //Adding two edges instead of three [Can be optimized to 2 instead of 5, but due to low probability it doesnt make sense]
+            res.num--;
+            break;
+        case LEFT:  //Adding arc and calculating intersection
+            //Calculating intersection
+            line_1 = Line(l1, l2);
+            line_2 = Line(l3, l4);
+            tmp = intersect2d(line_1.a, line_1.b, line_1.c, line_2.a, line_2.b, line_2.c);
+            assert(tmp!=nullptr);
+            l2 = *tmp;
+            l3 = *tmp;
+            //Adding arc to the right
+            res.outline[j].type = ARC_CIRCLE;
+            res.outline[j].r = threshold;
+            res.outline[j].cx = points[i-1]->GetX();
+            res.outline[j].cy = points[i-1]->GetY();
+            res.outline[j].aA = dir.normalR();
+            res.outline[j].aB = dir2.normalR();
+            res.outline[j].direction = 1;
+            j++;
+            break;
+        case RIGHT:
+            //Calculating intersection
+            line_1 = Line(r1, r2);
+            line_2 = Line(r3, r4);
+            tmp = intersect2d(line_1.a, line_1.b, line_1.c, line_2.a, line_2.b, line_2.c);
+            assert(tmp!=nullptr);
+            r2 = *tmp;
+            r3 = *tmp;
+            //Adding arc to the right
+            res.outline[j].type = ARC_CIRCLE;
+            res.outline[j].r = threshold;
+            res.outline[j].cx = points[i-1]->GetX();
+            res.outline[j].cy = points[i-1]->GetY();
+            res.outline[j].aA = dir.normalL();
+            res.outline[j].aB = dir2.normalL();
+            res.outline[j].direction = -1;
+            j++;
+            break;
+        }
+        //Adding linear edges
+        res.outline[j].type = LINEAR;
+        res.outline[j].A = l1;
+        res.outline[j].B = l2;
+        res.outline[j+1].type = LINEAR;
+        res.outline[j+1].A = r1;
+        res.outline[j+1].B = r2;
+        j+=2;
+        r1 = r3;
+        l1 = l3;
+        r2 = r4;
+        l2 = l4;
+        dir = dir2;
+    }
+    //Last two lines
+    res.outline[j].type = LINEAR;
+    res.outline[j].A = l1;
+    res.outline[j].B = l2;
+    res.outline[j+1].type = LINEAR;
+    res.outline[j+1].A = r1;
+    res.outline[j+1].B = r2;
+
+    //Last arc
+    res.outline[j+2].type = ARC_CIRCLE;
+    res.outline[j+2].r = threshold;
+    res.outline[j+2].cx = points[count-1]->GetX();
+    res.outline[j+2].cy = points[count-1]->GetY();
+    res.outline[j+2].aA = dir.normalR();
+    res.outline[j+2].aB = dir.normalL();
+    res.outline[j+2].direction = 1;
+
+    assert(j+2 == res.num);
+    return res;
 }
 
 

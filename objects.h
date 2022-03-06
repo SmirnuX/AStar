@@ -47,6 +47,8 @@ private:
     Point* max_p;  //Right point (max x)
 public:
     Line(Point p1, Point p2);
+    Line(Line& other);
+    Line();
     ~Line();
     void Set(double x1, double y1, double x2, double y2);
     void Update();  //Update line equation

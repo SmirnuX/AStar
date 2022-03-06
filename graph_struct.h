@@ -11,12 +11,17 @@ enum OBJ_SHAPE {POINT,      //No obstacle - used for start and end points
                 CIRCLE,     //Circle
                 POLYGON};   //Combination of arcs and lines
 
+enum SIDE {LEFT,
+           RIGHT,
+           FORWARD};
+
 struct edge;
 
 struct obstacle //[TODO] Replace with classes
 {
     OBJ_SHAPE shape;
     Point* point;   //Center coords [POINT, CIRCLE]
+    unsigned int num;   //Number of edges [POLYGON]
     edge* outline;  //Array of linear and circular edges [POLYGON]
     double r;       //Radius [CIRCLE]
 };

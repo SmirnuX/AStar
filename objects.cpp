@@ -119,10 +119,26 @@ Line::Line(Point p1, Point p2)
     Update();
 }
 
+Line::Line(Line& other)
+{
+    min_p = new Point(other.GetMinX(), other.GetMinY());
+    max_p = new Point(other.GetMaxX(), other.GetMaxY());
+    Update();
+}
+
+Line::Line()
+{
+    //Empty body
+    min_p = nullptr;
+    max_p = nullptr;
+}
+
 Line::~Line()
 {
-    delete min_p;
-    delete max_p;
+    if (min_p != nullptr)
+        delete min_p;
+    if (max_p != nullptr)
+        delete max_p;
 }
 
 void Line::Set(double x1, double y1, double x2, double y2)
