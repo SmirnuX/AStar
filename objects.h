@@ -21,7 +21,7 @@ protected:
 public:
     Point();    //Uninitialized
     Point(double _x, double _y);
-    virtual ~Point();
+    virtual ~Point() = default;
 
     bool operator== (const Point &b) const;    //Check for equality
     bool operator!= (const Point &b) const;
@@ -47,17 +47,19 @@ private:
     Point* max_p;  //Right point (max x)
 public:
     Line(Point p1, Point p2);
-    Line(Line& other);
+    Line(const Line& other);
+    Line(Line&& other) = delete;
     Line();
     ~Line();
     void Set(double x1, double y1, double x2, double y2);
     void Update();  //Update line equation
     void Turn(Angle angle, Point& pivot);
     double a, b, c;
-    double GetMinX();
-    double GetMaxX();
-    double GetMinY();
-    double GetMaxY();
+    double GetMinX() const;
+    double GetMaxX() const;
+    double GetMinY() const;
+    double GetMaxY() const;
+    operator=(const Line& other);
 };
 
 class Circle: public Point

@@ -17,11 +17,6 @@ Point::Point(double _x, double _y)
     y = _y;
 }
 
-Point::~Point()
-{
-    //Empty destructor
-}
-
 void Point::MoveTo(double _x, double _y)
 {
     x = _x;
@@ -119,7 +114,7 @@ Line::Line(Point p1, Point p2)
     Update();
 }
 
-Line::Line(Line& other)
+Line::Line(const Line& other)
 {
     min_p = new Point(other.GetMinX(), other.GetMinY());
     max_p = new Point(other.GetMaxX(), other.GetMaxY());
@@ -129,8 +124,8 @@ Line::Line(Line& other)
 Line::Line()
 {
     //Empty body
-    min_p = nullptr;
-    max_p = nullptr;
+    min_p = new Point();
+    max_p = new Point();
 }
 
 Line::~Line()
@@ -168,26 +163,30 @@ void Line::Turn(Angle angle, Point &pivot)
     Update();
 }
 
-double Line::GetMinX()
+double Line::GetMinX() const
 {
     return min_p->GetX();
 }
 
-double Line::GetMaxX()
+double Line::GetMaxX() const
 {
     return max_p->GetX();
 }
 
-double Line::GetMinY()
+double Line::GetMinY() const
 {
     return min_p->GetY();
 }
 
-double Line::GetMaxY()
+double Line::GetMaxY() const
 {
     return max_p->GetY();
 }
 
+Line::operator=(const Line& other)
+{
+    Set(other.GetMinX(), other.GetMinY(), other.GetMaxX(), other.GetMaxY());
+}
 
 //=== Circle class realization ===
 Circle::Circle(double _x, double _y, double _r) : Point(_x, _y)

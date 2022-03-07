@@ -783,7 +783,7 @@ obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round 
     res.outline[j+2].aB = dir.normalL();
     res.outline[j+2].direction = 1;
 
-    assert(j+2 == res.num);
+    assert(j+2 == res.num-1); //Test if count is correct
     return res;
 }
 
@@ -1258,7 +1258,7 @@ obstacle PolygonCollider::GetOutline(double threshold)  //Get graph to ride roun
     res.outline[j+2].aB = dir.normalL();
     res.outline[j+2].direction = 1;
 
-    assert(j+2 == res.num);
+    assert(j+2 == res.num-1);
     return res;
 }
 
