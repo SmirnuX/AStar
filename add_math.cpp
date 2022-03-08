@@ -208,6 +208,17 @@ double anglediff(const Angle& left, const Angle& right)    //Angle difference in
     return da;
 }
 
+bool angle_between(double min_angle, double angle ,double max_angle)    //Is angle between min_angle and max_angle?
+{
+    if (max_angle < min_angle)
+    {
+        max_angle += 2 * M_PI;
+    }
+    if (min_angle < angle && angle < max_angle)
+        return true;
+    return (min_angle < angle + 2*M_PI && angle + 2*M_PI < max_angle);
+}
+
 
 //=== Safe trigonometry functions ===
 double safe_acos(double ang)    //If safe_acos is called with cos > 1 or < -1, it converts it to nearest right value

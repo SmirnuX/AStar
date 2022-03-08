@@ -68,8 +68,8 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
     {
         for (int j = i+1; j < count; j++)
         {
-            struct edge temp_edges[MAX_TEMP_EDGES];
-            struct vertex* temp_verts[MAX_TEMP_VERTS];
+            std::vector<edge> temp_edges;
+            std::vector<vertex*> temp_verts;
             struct temp_edges temp_count;
 
             obstacle* A = objects + i;
@@ -169,6 +169,8 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
                     result->vertices.push_back(temp_edges[k].pB);
                 }
             }
+            temp_edges.clear();
+            temp_verts.clear();
         }
     }
 
@@ -528,14 +530,14 @@ void graph::Show(int x, int y)  //Drawing graph with additional info
     }
 }
 
-struct temp_edges get_edges_point_to_point(struct vertex** verts, struct edge* edges,
+struct temp_edges get_edges_point_to_point(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B)  //Add line from point A to point B
 {
     struct temp_edges count;
     count.temp_edges_count = 1;
     count.temp_vertices_count = 2;
-    verts[0] = add_vert(A->point, A);
-    verts[1] = add_vert(B->point, B);
+    verts.push_back(add_vert(A->point, A));
+    verts.push_back(add_vert(B->point, B));
 
     edge line;
     line.chosen = false;
@@ -544,12 +546,12 @@ struct temp_edges get_edges_point_to_point(struct vertex** verts, struct edge* e
     line.pA = verts[0];
     line.pB = verts[1];
     line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-    edges[0] = line;
+    edges.push_back(line);
 
     return count;
 }
 
-struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge* edges,
+struct temp_edges get_edges_circle_to_circle(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B)  //Add [0,2,4] lines from circle A to circle B
 {
     double dist2 = distance2(*(A->point), *(B->point));
@@ -571,18 +573,18 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
     double outer_angle = 2 * safe_acos(-fabs(A->r - B->r) / dist);  //Angle between outer tangents
 
     //Adding vertices
-    verts[0] = add_vert(A->point->GetX() + A->r * cos(angle+outer_angle/2),
+    verts.push_back(    add_vert(A->point->GetX() + A->r * cos(angle+outer_angle/2),
                         A->point->GetY() + A->r * sin(angle+outer_angle/2),
-                        A, angle+outer_angle/2);
-    verts[1] = add_vert(B->point->GetX() + B->r * cos(angle+outer_angle/2),
+                        A, angle+outer_angle/2));
+    verts.push_back(    add_vert(B->point->GetX() + B->r * cos(angle+outer_angle/2),
                         B->point->GetY() + B->r * sin(angle+outer_angle/2),
-                        B, angle+outer_angle/2);
-    verts[2] = add_vert(A->point->GetX() + A->r * cos(angle-outer_angle/2),
+                        B, angle+outer_angle/2));
+    verts.push_back(    add_vert(A->point->GetX() + A->r * cos(angle-outer_angle/2),
                         A->point->GetY() + A->r * sin(angle-outer_angle/2),
-                        A, angle-outer_angle/2);
-    verts[3] = add_vert(B->point->GetX() + B->r * cos(angle-outer_angle/2),
+                        A, angle-outer_angle/2));
+    verts.push_back(    add_vert(B->point->GetX() + B->r * cos(angle-outer_angle/2),
                         B->point->GetY() + B->r * sin(angle-outer_angle/2),
-                        B, angle-outer_angle/2);
+                        B, angle-outer_angle/2));
 
     //Adding edges
     struct edge line;
@@ -592,11 +594,11 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
     line.pA = verts[0];
     line.pB = verts[1];
     line.length = distance(*(line.pA->point), *(line.pB->point));
-    edges[0] = line;
+    edges.push_back(line);
     line.pA = verts[2];
     line.pB = verts[3];
     line.length = distance(*(line.pA->point), *(line.pB->point));
-    edges[1] = line;
+    edges.push_back(line);
 
     if (dist > (A->r + B->r)) //If circles dont intersect
     {
@@ -605,19 +607,19 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
         count.temp_vertices_count = 8;
 
         double inner_angle = safe_acos((A->r + B->r) / dist);  //Angle between inner tangents
-        verts[4] = add_vert(A->point->GetX() + A->r * cos(angle+inner_angle),
-                                 A->point->GetY() + A->r * sin(angle+inner_angle),
-                                 A, angle+inner_angle);
-        verts[5] = add_vert(B->point->GetX() + B->r * cos(M_PI+angle+inner_angle),
-                                 B->point->GetY() + B->r * sin(M_PI+angle+inner_angle),
-                                 B, M_PI+angle+inner_angle);
+        verts.push_back(    add_vert(A->point->GetX() + A->r * cos(angle+inner_angle),
+                            A->point->GetY() + A->r * sin(angle+inner_angle),
+                            A, angle+inner_angle));
+        verts.push_back(    add_vert(B->point->GetX() + B->r * cos(M_PI+angle+inner_angle),
+                            B->point->GetY() + B->r * sin(M_PI+angle+inner_angle),
+                            B, M_PI+angle+inner_angle));
 
-        verts[6] = add_vert(A->point->GetX() + A->r * cos(angle-inner_angle),
-                                 A->point->GetY() + A->r * sin(angle-inner_angle),
-                                 A, angle-inner_angle);
-        verts[7] = add_vert(B->point->GetX() + B->r * cos(M_PI+angle-inner_angle),
-                                 B->point->GetY() + B->r * sin(M_PI+angle-inner_angle),
-                                 B, M_PI+angle-inner_angle);
+        verts.push_back(    add_vert(A->point->GetX() + A->r * cos(angle-inner_angle),
+                            A->point->GetY() + A->r * sin(angle-inner_angle),
+                            A, angle-inner_angle));
+        verts.push_back(    add_vert(B->point->GetX() + B->r * cos(M_PI+angle-inner_angle),
+                            B->point->GetY() + B->r * sin(M_PI+angle-inner_angle),
+                            B, M_PI+angle-inner_angle));
 
         //Adding inner edges
         edge line;
@@ -636,7 +638,7 @@ struct temp_edges get_edges_circle_to_circle(struct vertex** verts, struct edge*
     return count;
 }
 
-struct temp_edges get_edges_point_to_circle(struct vertex** verts, struct edge* edges,
+struct temp_edges get_edges_point_to_circle(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B)  //Add 0 or 2 lines from point A to circle B (or vice-versa)
 {
     double dist = sqrt(distance2(*(A->point), *(B->point)));
@@ -683,5 +685,159 @@ struct temp_edges get_edges_point_to_circle(struct vertex** verts, struct edge* 
     line.pB = verts[3];
     line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
     edges[1] = line;
+    return count;
+}
+
+struct temp_edges get_edges_point_to_polygon(std::vector<vertex*>& verts, std::vector<edge>& edges,
+                                            struct obstacle* A, struct obstacle* B)  //Add from 0 to 2N lines from point A to polygon B (or vice-versa)
+{
+    double dist, angle;
+    struct edge line;
+    line.chosen = false;
+    line.passed = false;
+    line.type = LINEAR;
+    edges[0] = line;
+    obstacle* pt;   //Point
+    obstacle* poly;   //Polygon
+    if (A->shape == POLYGON) //Deciding who is who
+    {
+        poly = A;
+        pt = B;
+    }
+    else
+    {
+        poly = B;
+        pt = A;
+    }
+    struct temp_edges count;
+    count.temp_vertices_count = 0;
+    count.temp_edges_count = 0;
+
+    for (int i = 0; i < poly->num; i++)
+    {
+        if (poly->outline[i].type == LINEAR)
+            continue;
+        edge* curr_edge = poly->outline + i;
+        dist = distance(pt->point->GetX(), pt->point->GetY(), curr_edge->cx, curr_edge->cy);
+        angle = direction_to_point(pt->point->GetX(), pt->point->GetY(), curr_edge->cx, curr_edge->cy);
+        double outer_angle = 2 * safe_acos(curr_edge->r / dist);  //Angle between outer tangents
+        //Trying to build first tangent
+        double tang_angle = Angle(-angle + outer_angle/2).GetR(); //Angle between center of an arc and tangent
+        if (angle_between(
+                    curr_edge->direction == 1 ? curr_edge->aA.GetR() : curr_edge->aB.GetR(),
+                    tang_angle,
+                    curr_edge->direction == 1 ? curr_edge->aB.GetR() : curr_edge->aA.GetR()))
+        {
+            int j = verts.size();
+            verts.push_back(add_vert(pt->point->GetX(),
+                                     pt->point->GetY(), pt));
+            verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(tang_angle),
+                                     curr_edge->cy + curr_edge->r * sin(tang_angle),
+                                     poly, tang_angle););
+            line.pA = verts[j];
+            line.pB = verts[j+1];
+            line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+            edges.push_back(line);
+            count.temp_vertices_count += 2;
+            count.temp_edges_count++;
+        }
+        //Trying to build second tangent
+        tang_angle = Angle(-angle - outer_angle/2).GetR(); //Angle between center of an arc and tangent
+        if (angle_between(
+                    curr_edge->direction == 1 ? curr_edge->aA.GetR() : curr_edge->aB.GetR(),
+                    tang_angle,
+                    curr_edge->direction == 1 ? curr_edge->aB.GetR() : curr_edge->aA.GetR()))
+        {
+            int j = verts.size();
+            verts.push_back(add_vert(pt->point->GetX(),
+                                     pt->point->GetY(), pt));
+            verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(tang_angle),
+                                     curr_edge->cy + curr_edge->r * sin(tang_angle),
+                                     poly, tang_angle););
+            line.pA = verts[j];
+            line.pB = verts[j+1];
+            line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+            edges.push_back(line);
+            count.temp_vertices_count += 2;
+            count.temp_edges_count++;
+        }
+    }
+    return count;
+}
+
+struct temp_edges get_edges_circle_to_polygon(std::vector<vertex*>& verts, std::vector<edge>& edges,
+                                                struct obstacle* A, struct obstacle* B)  //Add from 0 to 4N lines from point A to polygon B (or vice-versa)
+{
+    double dist, angle;
+    struct edge line;
+    line.chosen = false;
+    line.passed = false;
+    line.type = LINEAR;
+    edges[0] = line;
+    obstacle* pt;   //Point
+    obstacle* poly;   //Polygon
+    if (A->shape == POLYGON) //Deciding who is who
+    {
+        poly = A;
+        pt = B;
+    }
+    else
+    {
+        poly = B;
+        pt = A;
+    }
+    struct temp_edges count;
+    count.temp_vertices_count = 0;
+    count.temp_edges_count = 0;
+
+    for (int i = 0; i < poly->num; i++)
+    {
+        if (poly->outline[i].type == LINEAR)
+            continue;
+        edge* curr_edge = poly->outline + i;
+        dist = distance(pt->point->GetX(), pt->point->GetY(), curr_edge->cx, curr_edge->cy);
+        angle = direction_to_point(pt->point->GetX(), pt->point->GetY(), curr_edge->cx, curr_edge->cy);
+        double outer_angle = 2 * safe_acos(curr_edge->r / dist);  //Angle between outer tangents
+        //Trying to build first tangent
+        double tang_angle = Angle(-angle + outer_angle/2).GetR(); //Angle between center of an arc and tangent
+        if (angle_between(
+                    curr_edge->direction == 1 ? curr_edge->aA.GetR() : curr_edge->aB.GetR(),
+                    tang_angle,
+                    curr_edge->direction == 1 ? curr_edge->aB.GetR() : curr_edge->aA.GetR()))
+        {
+            int j = verts.size();
+            verts.push_back(add_vert(pt->point->GetX(),
+                                     pt->point->GetY(), pt));
+            verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(tang_angle),
+                                     curr_edge->cy + curr_edge->r * sin(tang_angle),
+                                     poly, tang_angle););
+            line.pA = verts[j];
+            line.pB = verts[j+1];
+            line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+            edges.push_back(line);
+            count.temp_vertices_count += 2;
+            count.temp_edges_count++;
+        }
+        //Trying to build second tangent
+        tang_angle = Angle(-angle - outer_angle/2).GetR(); //Angle between center of an arc and tangent
+        if (angle_between(
+                    curr_edge->direction == 1 ? curr_edge->aA.GetR() : curr_edge->aB.GetR(),
+                    tang_angle,
+                    curr_edge->direction == 1 ? curr_edge->aB.GetR() : curr_edge->aA.GetR()))
+        {
+            int j = verts.size();
+            verts.push_back(add_vert(pt->point->GetX(),
+                                     pt->point->GetY(), pt));
+            verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(tang_angle),
+                                     curr_edge->cy + curr_edge->r * sin(tang_angle),
+                                     poly, tang_angle););
+            line.pA = verts[j];
+            line.pB = verts[j+1];
+            line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
+            edges.push_back(line);
+            count.temp_vertices_count += 2;
+            count.temp_edges_count++;
+        }
+    }
     return count;
 }

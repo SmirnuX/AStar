@@ -63,8 +63,9 @@ bool operator<(const Angle& left, const Angle& right);  //Checks, if smaller ang
 bool operator>(const Angle& left, const Angle& right);
 
 double direction_to_point(double from_x, double from_y, double to_x, double to_y);  //Calculate driection from (from_x, from_y) to (to_x, to_y)
-double anglediff(double a, double b);    //Angle difference in range from -180 to 180
-double anglediff(const Angle& left, const Angle& right);    //Angle difference in range from -PI to PI
+double anglediff(double a, double b);                                   //Angle difference in range from -180 to 180
+double anglediff(const Angle& left, const Angle& right);                //Angle difference in range from -PI to PI
+bool angle_between(double min_angle, double angle ,double max_angle);   //Is angle between min_angle and max_angle?
 
 double safe_acos(double cos);   //If safe_acos is called with cos > 1 or < -1, it converts it to nearest right value
 double safe_asin(double sin);
