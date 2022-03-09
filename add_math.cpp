@@ -1,4 +1,5 @@
 #include "add_math.h"
+#include "objects.h"
 #include <QDebug>
 
 //=== Trigonometry ===
@@ -61,13 +62,13 @@ double Angle::GetD() const  //Get angle in degrees
 
 Angle Angle::normalL() const   //Get left normal
 {
-    Angle a = Angle(GetR() + M_PI/4);
+    Angle a = Angle(GetR() + M_PI/2);
     return a;
 }
 
 Angle Angle::normalR() const  //Get right normal
 {
-    Angle a = Angle(GetR() - M_PI/4);
+    Angle a = Angle(GetR() - M_PI/2);
     return a;
 }
 
@@ -263,6 +264,36 @@ double distance(double ax, double ay, double bx, double by)  //Distance between 
     return sqrt(distance2(ax, ay, bx, by));
 }
 
+bool arc_line_collision(Circle crc, Line ln, double min_ang, double max_ang)       //Is there collision between arc on circle crc and line ln?
+{
+    double a1, a2;   //Points of intersection
+    assert(crc.GetR() > 0);
+    //Search for nearest point on line to circle
+    double normal_a, normal_b;
+    normal_a = - ln.b;
+    normal_b = ln.a;
+    //Finding C for equation of normal
+    double normal_c = -(normal_a * crc.GetX() + normal_b * crc.GetY());
+    //Finding intersection of normal and line
+    std::unique_ptr<Point> nearest_pt(intersect2d( normal_a, normal_b, normal_c,
+                                                    ln.a, ln.b, ln.c));
+    if (!nearest_pt)
+    {
+        throw std::runtime_error("Unexpected error. Somehow line and its normal do not intersect");
+    }
+    if (!intersect(ln.GetMinX(), ln.GetMaxX(), nearest_pt->GetX(), nearest_pt->GetX()) ||
+        !intersect(ln.GetMinY(), ln.GetMaxY(), nearest_pt->GetY(), nearest_pt->GetY()) )
+        return false;
+    double dist = distance2(nearest_pt->GetX(), nearest_pt->GetY(), crc.GetX(), crc.GetY());
+    if (dist > crc.GetR() * crc.GetR())   //If there is no intersection
+        return false;
+    //Find angle
+    double line_angle = direction_to_point(crc.GetX(), crc.GetY(), nearest_pt->GetX(), nearest_pt->GetY());
+    double angle = safe_acos(sqrt(dist)/crc.GetR());
+    a1 = Angle(line_angle + angle).GetR();
+    a2 = Angle(line_angle - angle).GetR();
+    return angle_between(min_ang, a1, max_ang) || angle_between(min_ang, a2, max_ang);
+}
 
 
 

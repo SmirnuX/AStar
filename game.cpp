@@ -33,6 +33,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     Box* box2 = new Box(500, 300);
     Box* box3 = new Box(800, 550);
     WallChain* wc = new WallChain(100, 100);
+    Wall* ln = new Wall(300, 200);
     //Entity stack creation
     stack = new EntityStack();
     stack->Add((Entity*) player);
@@ -44,12 +45,15 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     stack->Add((Entity*) box2);
     stack->Add((Entity*) box3);
     stack->Add((Entity*) wc);
+    stack->Add((Entity*) ln);
     //Visible obstacles
     visible = new EntityStack();
     visible->Add((Entity*) box);
     visible->Add((Entity*) box1);
     visible->Add((Entity*) box2);
     visible->Add((Entity*) box3);
+    visible->Add((Entity*) wc);
+    visible->Add((Entity*) ln);
     //Updating this every 15ms
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
@@ -276,6 +280,7 @@ void game::game_update()  //Function, called every frame
         for (visible->Reset(); visible->current!=NULL; visible->Next())
         {
             obst[i] = visible->current->entity->collision_mask->GetOutline(25);
+            ShowObstacle(obst+i);
             i++;
         }
 

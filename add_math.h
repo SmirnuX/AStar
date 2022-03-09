@@ -74,6 +74,10 @@ double safe_asin(double sin);
 double distance2(double ax, double ay, double bx, double by);  //Square distacnce between points
 double distance(double ax, double ay, double bx, double by);  //Distance between points
 
+class Circle;
+class Line;
+bool arc_line_collision(Circle crc, Line ln, double min_ang, double max_ang);   //Is there collision between arc on circle crc and line ln?
+
 
 //=== Simple helper functions ===
 double sign(double a);  //1 if a >=0, -1 if a<0

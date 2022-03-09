@@ -9,6 +9,8 @@ constexpr unsigned int MAX_PATH_COST = 1000000;
 #include "collision.h"
 #include "graph_struct.h"
 
+
+
 extern QPixmap* picture;
 
 class graph
@@ -37,6 +39,7 @@ struct temp_edges
     int temp_edges_count;
 };
 
+void ShowObstacle(obstacle* obst);
 
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle = Angle(0));
 vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle = Angle(0));

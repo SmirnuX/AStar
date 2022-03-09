@@ -1,4 +1,5 @@
 #include "game.h"
+#include "objects.h"
 
 //=== Comparing of two vertices - for std::priority_queue ===
 graph_cmp::graph_cmp(vertex* _ptr)
@@ -39,6 +40,44 @@ void graph::clear()
 graph::~graph()
 {
     clear();
+}
+
+void ShowObstacle(obstacle* obst)
+{
+    QPainter pntr(picture);
+    QPen penn;
+    penn.setWidth(1);
+    penn.setColor(QColor(255,0,0));
+    pntr.setPen(penn);
+    if (obst->shape == CIRCLE)
+    {
+        pntr.drawEllipse(obst->point->GetX() - obst->r, obst->point->GetY() - obst->r,
+                     2*obst->r, 2*obst->r);
+    }
+    else if (obst->shape == POLYGON)
+    {
+        for (uint i=0; i < obst->num; i++)
+        {
+            if (obst->outline[i].type == LINEAR)
+            {
+                pntr.drawLine(obst->outline[i].A.GetX(),
+                              obst->outline[i].A.GetY(),
+                              obst->outline[i].B.GetX(),
+                              obst->outline[i].B.GetY());
+            }
+            else
+            {
+                double sa, ea;
+                sa = -5760.0 / (2 * M_PI) * obst->outline[i].aA.GetR();
+                ea = -5760.0 / (2 * M_PI) * (obst->outline[i].aB.GetR()-obst->outline[i].aA.GetR());
+                if (ea > 0)
+                    ea -= 5760;
+                pntr.drawArc(obst->outline[i].cx - obst->outline[i].r, obst->outline[i].cy - obst->outline[i].r,
+                             2*obst->outline[i].r, 2*obst->outline[i].r,
+                             floor(sa), floor(ea));
+            }
+        }
+    }
 }
 
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle)    //Vertex creation
@@ -109,15 +148,49 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
                              temp_edges[k].pB->point->GetY());
                 for (int z = 0; z < count; z++) //Check collisions with every other object
                 {
-                    if (z == i || z == j || objects[z].shape != CIRCLE)
+                    if (z == i || z == j || objects[z].shape == POINT)
                         continue;
-                    CircleCollider crc(objects[z].point->GetX(),
-                                       objects[z].point->GetY(),
-                                       objects[z].r);
-                    if (lin.CheckCollision(&crc))
+                    if (objects[z].shape == CIRCLE) //Intersection with circles
                     {
-                        inter = true;
-                        break;
+                        CircleCollider crc(objects[z].point->GetX(),
+                                           objects[z].point->GetY(),
+                                           objects[z].r);
+                        if (lin.CheckCollision(&crc))
+                        {
+                            inter = true;
+                            break;
+                        }
+                    }
+                    else    //Intersection with polygons
+                    {
+                        for (int _i = 0; _i < objects[z].num; _i++)
+                        {
+                            edge* edg = objects[z].outline + _i;
+                            if (edg->type == LINEAR)
+                            {
+                                LineCollider lc(edg->A.GetX(), edg->A.GetY(),
+                                                edg->B.GetX(), edg->B.GetY());
+                                if (lin.CheckCollision(&lc))
+                                {
+                                    inter = true;
+                                    break;
+                                }
+                            }
+                            else    //Intersection with arcs
+                            {
+                                Line edge_ln;
+                                edge_ln.Set(temp_edges[k].pA->point->GetX(), temp_edges[k].pA->point->GetY(),
+                                         temp_edges[k].pB->point->GetX(), temp_edges[k].pB->point->GetY());
+                                if (arc_line_collision(Circle(edg->cx, edg->cy, edg->r),
+                                                       edge_ln,
+                                                       edg->direction == 1 ? edg->aA.GetR() : edg->aB.GetR(),
+                                                       edg->direction == 1 ? edg->aB.GetR() : edg->aA.GetR()))
+                                {
+                                    inter = true;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
                 if (inter && !targets)    //Don't add intersected edges (and their vertices)
