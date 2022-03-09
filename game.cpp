@@ -275,10 +275,6 @@ void game::game_update()  //Function, called every frame
         int i = 2;
         for (visible->Reset(); visible->current!=NULL; visible->Next())
         {
-//            obst[i].shape = CIRCLE;
-//            obst[i].point = new Point(visible->current->entity->GetX(),
-//                                      visible->current->entity->GetY());
-//            obst[i].r = threshold+side;
             obst[i] = visible->current->entity->collision_mask->GetOutline(25);
             i++;
         }
@@ -289,11 +285,11 @@ void game::game_update()  //Function, called every frame
         player->graph_to_path(path_graph);
         path_end = QTime::currentTime();
 
-        for(uint i = 0; i < visible->size+2; i++)
-        {
-            delete obst[i].point;
-        }
-        delete[] obst;
+//        for(uint i = 0; i < visible->size+2; i++)
+//        {
+//            delete obst[i].point;
+//        }
+//        delete[] obst;
         int delta1 = start.msecsTo(graph_end);
         int delta2 = graph_end.msecsTo(path_end);
         qDebug() << "Graph built in:" << delta1;

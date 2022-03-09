@@ -44,11 +44,16 @@ graph* build_graph(obstacle* objects, int count,  uint _start=0, uint _end=1, ui
 
 struct temp_edges get_edges_point_to_point(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B);  //Add line from point A to point B
-
 struct temp_edges get_edges_circle_to_circle(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B);  //Add [0,2,4] lines from circle A to circle B
-
 struct temp_edges get_edges_point_to_circle(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B);  //Add 0 or 2 lines from point A to circle B (or vice-versa)
+
+struct temp_edges get_edges_point_to_polygon(std::vector<vertex*>& verts, std::vector<edge>& edges,
+                                            struct obstacle* A, struct obstacle* B);  //Add from 0 to 2N lines from point A to polygon B (or vice-versa)
+struct temp_edges get_edges_circle_to_polygon(std::vector<vertex*>& verts, std::vector<edge>& edges,
+                                                struct obstacle* A, struct obstacle* B);  //Add from 0 to 4N lines from circle A to polygon B (or vice-versa)
+struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std::vector<edge>& edges,
+                                                struct obstacle* A, struct obstacle* B);  //Add from 0 to 4MN lines from polygon A to polygon B
 
 #endif // GRAPH_H
