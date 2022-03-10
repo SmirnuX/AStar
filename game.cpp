@@ -299,6 +299,7 @@ void game::game_update()  //Function, called every frame
         int delta2 = graph_end.msecsTo(path_end);
         qDebug() << "Graph built in:" << delta1;
         qDebug() << "Path built in:" << delta2;
+        toBuild = false;
     }
 
     if (follow)
