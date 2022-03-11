@@ -50,6 +50,7 @@ private:
     bool UI_ACTIVE;
     uimode UI_MODE;
     Ui_DebugMenu* Menu;
+    obstacle* obst = nullptr;
 public:
     Tank* player;  //Player tank
     Box* box;

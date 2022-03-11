@@ -30,8 +30,8 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     player = new Tank(500, 500);
     box = new Box(1000, 400);
     Box* box1 = new Box(1200, 600);
-    Box* box2 = new Box(500, 300);
-    Box* box3 = new Box(800, 550);
+    HexBox* hex1 = new HexBox(500, 300);
+    Barell* circ1 = new Barell(800, 550);
     WallChain* wc = new WallChain(100, 100);
     Wall* ln = new Wall(300, 200);
     //Entity stack creation
@@ -42,16 +42,16 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
 
     stack->Add((Entity*) box);      //Obstacles
     stack->Add((Entity*) box1);
-    stack->Add((Entity*) box2);
-    stack->Add((Entity*) box3);
+    stack->Add((Entity*) hex1);
+    stack->Add((Entity*) circ1);
     stack->Add((Entity*) wc);
     stack->Add((Entity*) ln);
     //Visible obstacles
     visible = new EntityStack();
     visible->Add((Entity*) box);
     visible->Add((Entity*) box1);
-    visible->Add((Entity*) box2);
-    visible->Add((Entity*) box3);
+    visible->Add((Entity*) hex1);
+    visible->Add((Entity*) circ1);
     visible->Add((Entity*) wc);
     visible->Add((Entity*) ln);
     //Updating this every 15ms
@@ -271,7 +271,7 @@ void game::game_update()  //Function, called every frame
     {
         //Path updating
         path_graph->clear();
-        obstacle* obst= new obstacle [visible->size+2];   //Two is for start and end points.
+        obst = new obstacle [visible->size+2];   //Two is for start and end points.
         obst[0].shape = POINT;
         obst[0].point = new Point(player->GetX(), player->GetY());
         obst[1].shape = POINT;
@@ -279,7 +279,7 @@ void game::game_update()  //Function, called every frame
         int i = 2;
         for (visible->Reset(); visible->current!=NULL; visible->Next())
         {
-            obst[i] = visible->current->entity->collision_mask->GetOutline(25);
+            obst[i] = visible->current->entity->collision_mask->GetOutline(50);
             ShowObstacle(obst+i);
             i++;
         }
@@ -325,6 +325,16 @@ void game::game_update()  //Function, called every frame
     }
     if (UI_MODE == GRAPH)
     {
+        int i = 2;
+        for (visible->Reset(); visible->current!=NULL; visible->Next())
+        {
+            if (obst == nullptr)
+                break;
+            ShowObstacle(obst+i);
+//            DeleteObstacle(obst+i);
+            i++;
+        }
+
         QPoint mouse_pos = mapFromGlobal( QCursor::pos());
         path_graph->Show(mouse_pos.x(), mouse_pos.y());
         QPainter pntr(picture);

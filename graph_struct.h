@@ -15,6 +15,10 @@ enum SIDE {LEFT,
            RIGHT,
            FORWARD};
 
+enum DIRECTION {NODIRECTION,
+                CLOCKWISE,
+                COUNTERCLOCKWISE};
+
 struct edge;
 
 struct obstacle //[TODO] Replace with classes
@@ -55,7 +59,7 @@ struct edge
     Point A, B;   //Star and end points
 
     Angle aA, aB;  //Start and end angles
-    double direction;   //Direction of an arc - 1 - clockwise, -1 - counter-clockwise
+    DIRECTION direction;   //Direction of an arc - 1 - clockwise, -1 - counter-clockwise
     double r;  //Radius
     double cx, cy;  //Center coords
     double length;  //Length of edge

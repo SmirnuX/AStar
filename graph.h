@@ -40,6 +40,7 @@ struct temp_edges
 };
 
 void ShowObstacle(obstacle* obst);
+void DeleteObstacle(obstacle* obst);
 
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle = Angle(0));
 vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle = Angle(0));

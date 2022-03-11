@@ -417,3 +417,55 @@ QString WallChain::GetName()
 }
 
 
+HexBox::HexBox(double _x, double _y):Entity(_x, _y)
+{
+    a = 50;
+    double xs[6];
+    double ys[6];
+    for (int i = 0; i < 6; i++)
+    {
+        xs[i] = _x + a * cos(M_PI/3 * i);
+        ys[i] = _y + a * sin(M_PI/3 * i);
+    }
+    collision_mask = (Collider*) new PolygonCollider(xs, ys, 6, _x, _y);
+}
+void HexBox::Show()
+{
+    QPainter painter(picture);
+    painter.setPen(QColor(0,0,0));
+    painter.setBrush(QColor(90,90,90));
+    QPointF pts[6];
+    for (int i = 0; i < 6; i++)
+    {
+        pts[i] = QPointF(   x + a * cos(M_PI/3 * i),
+                            y + a * sin(M_PI/3 * i));
+    }
+    painter.drawPolygon(pts, 6);
+}
+
+QString HexBox::GetName()
+{
+    return "Шестиугольник";
+}
+
+
+Barell::Barell(double _x, double _y):Entity(_x, _y)
+{
+    a = 50;
+    collision_mask = (Collider*) new CircleCollider(_x, _y, a);
+}
+
+void Barell::Show()
+{
+    QPainter painter(picture);
+    painter.setPen(QColor(0,0,0));
+    painter.setBrush(QColor(60,60,60));
+    painter.drawEllipse(x - a, y - a, 2*a, 2*a);
+}
+
+QString Barell::GetName()
+{
+    return "Бочка";
+}
+
+

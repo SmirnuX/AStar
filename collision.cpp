@@ -407,7 +407,7 @@ obstacle LineCollider::GetOutline(double threshold)  //Get graph to ride round t
     res.outline[0].cy = line->GetMinY();
     res.outline[0].aA = dir.normalL();
     res.outline[0].aB = dir.normalR();
-    res.outline[0].direction = -1;
+    res.outline[0].direction = COUNTERCLOCKWISE;
     //First parallel line
     res.outline[1].type = LINEAR;
     res.outline[1].A = Point(line->GetMinX() + threshold * cos(dir.normalR().GetR()),
@@ -421,7 +421,7 @@ obstacle LineCollider::GetOutline(double threshold)  //Get graph to ride round t
     res.outline[2].cy = line->GetMaxY();
     res.outline[2].aA = dir.normalR();
     res.outline[2].aB = dir.normalL();
-    res.outline[2].direction = -1;
+    res.outline[2].direction = COUNTERCLOCKWISE;
     //Second parallel line
     res.outline[3].type = LINEAR;
     res.outline[3].A = Point(line->GetMaxX() + threshold * cos(dir.normalL().GetR()),
@@ -651,7 +651,7 @@ obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round 
     res.outline[0].cy = points[0]->GetY();
     res.outline[0].aA = dir.normalL();
     res.outline[0].aB = dir.normalR();
-    res.outline[0].direction = -1;
+    res.outline[0].direction = COUNTERCLOCKWISE;
 
     int j = 1;  //Index of next edge
 
@@ -718,7 +718,7 @@ obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round 
             res.outline[j].cy = points[i-1]->GetY();
             res.outline[j].aA = dir.normalR();
             res.outline[j].aB = dir2.normalR();
-            res.outline[j].direction = 1;
+            res.outline[j].direction = COUNTERCLOCKWISE;
             j++;
             break;
         case RIGHT:
@@ -729,14 +729,14 @@ obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round 
             assert(tmp!=nullptr);
             r2 = *tmp;
             r3 = *tmp;
-            //Adding arc to the right
+            //Adding arc to the left
             res.outline[j].type = ARC_CIRCLE;
             res.outline[j].r = threshold;
             res.outline[j].cx = points[i-1]->GetX();
             res.outline[j].cy = points[i-1]->GetY();
             res.outline[j].aA = dir.normalL();
             res.outline[j].aB = dir2.normalL();
-            res.outline[j].direction = -1;
+            res.outline[j].direction = CLOCKWISE;
             j++;
             break;
         }
@@ -769,7 +769,7 @@ obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round 
     res.outline[j+2].cy = points[count-1]->GetY();
     res.outline[j+2].aA = dir.normalR();
     res.outline[j+2].aB = dir.normalL();
-    res.outline[j+2].direction = 1;
+    res.outline[j+2].direction = COUNTERCLOCKWISE;
 
     assert((j+2) == (res.num-1)); //Test if count is correct
     return res;
@@ -1186,7 +1186,7 @@ obstacle PolygonCollider::GetOutline(double threshold)  //Get graph to ride roun
             res.outline[j].cy = points[i]->GetY();
             res.outline[j].aA = Angle(normal_dir);
             res.outline[j].aB = Angle(normal_dir2);
-            res.outline[j].direction = normal == RIGHT;
+            res.outline[j].direction = (normal == RIGHT)?COUNTERCLOCKWISE:CLOCKWISE;
             j++;
         }
 

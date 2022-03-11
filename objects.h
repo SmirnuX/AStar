@@ -154,6 +154,28 @@ public:
     QString GetName();
 };
 
+class HexBox: public Entity    //Hexagonal box
+{
+public:
+    HexBox(double _x, double _y);
+    double a;   //radius of box
+    void Show();
+
+    //Getting info
+    QString GetName();
+};
+
+class Barell: public Entity //Circle box
+{
+public:
+    Barell(double _x, double _y);
+    double a;   //radius of box
+    void Show();
+
+    //Getting info
+    QString GetName();
+};
+
 class WallChain: public Entity  //Two walls connected
 {
 public:

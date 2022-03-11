@@ -14,14 +14,14 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
         for (uint i = 0; i < gr->edges.size(); i++)
         {
             vertex* adj;    //Adjacent vertex
-            double dir = 1.0;   //Direction of movement - aA is before aB
+            DIRECTION dir = COUNTERCLOCKWISE;   //Direction of movement - aA is before aB
             if (gr->edges[i].pA == curr)
             {
                 adj = gr->edges[i].pB;
             }
             else if (gr->edges[i].pB == curr)
             {
-                dir = -1.0; //Reverse direction
+                dir = CLOCKWISE; //Reverse direction
                 adj = gr->edges[i].pA;
             }
             else
