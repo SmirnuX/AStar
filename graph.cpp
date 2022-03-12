@@ -35,6 +35,8 @@ void graph::clear()
 {
     for (unsigned int i=0; i < vertices.size(); i++)
         delete vertices[i];
+    vertices.clear();
+    edges.clear();
 }
 
 graph::~graph()
@@ -214,7 +216,11 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
                     }
                 }
                 if (inter && !targets)    //Don't add intersected edges (and their vertices)
+                {
+                    delete temp_edges[k].pA;
+                    delete temp_edges[k].pB;
                     continue;
+                }
                 //Merge vertices
                 double eps = 4; //Radius of merging
                 bool first = true;  //Is first vertex edge not merged yet

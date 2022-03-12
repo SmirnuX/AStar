@@ -8,10 +8,6 @@ extern EntityStack* stack;
 game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     : QMainWindow(parent)
 {
-    //Debug log for path
-    path_log = new QFile("path_log.txt");
-    path_log->open(QFile::Append | QFile::Text);
-
     target_x = 0;
     target_y = 0;
     SHOW_COLLIDERS = true;
@@ -59,7 +55,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
     timer->start(15);
 //    player->BuildPath(0, 0);
-    path_graph = new graph();
+    path_graph = nullptr;
 
     uiUpdate();
 }
@@ -260,18 +256,28 @@ void game::game_update()  //Function, called every frame
         for (stack->Reset(); stack->current != NULL; stack->Next())
             stack->current->entity->collision_mask->ShowCollider();
 
-    double base_width = 80;
-    double base_length = 100;
-    double threshold = sqrt(base_width*base_width + base_length*base_length)/2 + 10;
-    double side = 2 * box->a * 0.8;
     QTime start = QTime::currentTime();
     QTime graph_end;
     QTime path_end;
     if (toBuild)
     {
         //Path updating
-        path_graph->clear();
+        if (path_graph != nullptr)
+        {
+            delete path_graph;
+        }
+
+        //Clearing ol obstacles
+        if (obst != nullptr)
+        {
+            for (int i = 0; i < obst_num; i++)
+                DeleteObstacle(obst+i);
+            delete[] obst;
+            obst = nullptr;
+            obst_num = 0;
+        }
         obst = new obstacle [visible->size+2];   //Two is for start and end points.
+        obst_num = visible->size+2;
         obst[0].shape = POINT;
         obst[0].point = new Point(player->GetX(), player->GetY());
         obst[1].shape = POINT;
@@ -280,21 +286,16 @@ void game::game_update()  //Function, called every frame
         for (visible->Reset(); visible->current!=NULL; visible->Next())
         {
             obst[i] = visible->current->entity->collision_mask->GetOutline(50);
-            ShowObstacle(obst+i);
             i++;
         }
+        assert(i == visible->size+2);
 
-        path_graph = build_graph(obst, visible->size+2);
+        path_graph = build_graph(obst, obst_num);
         graph_end = QTime::currentTime();
         path_graph->AStar();
         player->graph_to_path(path_graph);
         path_end = QTime::currentTime();
 
-//        for(uint i = 0; i < visible->size+2; i++)
-//        {
-//            delete obst[i].point;
-//        }
-//        delete[] obst;
         int delta1 = start.msecsTo(graph_end);
         int delta2 = graph_end.msecsTo(path_end);
         qDebug() << "Graph built in:" << delta1;
@@ -316,7 +317,8 @@ void game::game_update()  //Function, called every frame
 
     if (SHOW_PATH)
     {
-        path_graph->Show();
+        if (path_graph != nullptr)
+            path_graph->Show();
         player->ShowPath();
         QPainter pntr(picture);
         pntr.setPen(QColor(255,0,0));
@@ -331,12 +333,14 @@ void game::game_update()  //Function, called every frame
             if (obst == nullptr)
                 break;
             ShowObstacle(obst+i);
-//            DeleteObstacle(obst+i);
             i++;
         }
 
-        QPoint mouse_pos = mapFromGlobal( QCursor::pos());
-        path_graph->Show(mouse_pos.x(), mouse_pos.y());
+        if (path_graph != nullptr)
+        {
+            QPoint mouse_pos = mapFromGlobal( QCursor::pos());
+            path_graph->Show(mouse_pos.x(), mouse_pos.y());
+        }
         QPainter pntr(picture);
         pntr.setPen(QColor(255,0,0));
         pntr.setPen(QColor(0, 0, 255));

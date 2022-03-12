@@ -293,7 +293,7 @@ bool LineCollider::CheckCollision(CircleCollider* other)     //Collision with ci
                                line->a, line->b, line->c);
     if (nearest_pt == nullptr)
     {
-        throw std::runtime_error("Unexpected error. Somehow line and its normal do not intersect");
+        throw std::runtime_error("[LINECOLLIDER::CIRCLECOLLIDER]Unexpected error. Somehow line and its normal do not intersect");
     }
     if (!intersect(line->GetMinX(), line->GetMaxX(), nearest_pt->GetX(), nearest_pt->GetX()) ||
         !intersect(line->GetMinY(), line->GetMaxY(), nearest_pt->GetY(), nearest_pt->GetY()) )
