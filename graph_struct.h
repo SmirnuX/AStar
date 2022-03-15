@@ -34,7 +34,8 @@ struct vertex
 {
     Point* point;
     obstacle* parent;   //Obstacle, where point is lied on
-    Angle angle;       //Angle of vector between center of parent and vertex
+    Angle angle;        //Angle of vector between center of parent and vertex
+    int poly_i;         //Index of edge, where point is lied on
     double cost;
     double dist;    //Distance to end point
 };
@@ -56,7 +57,7 @@ struct edge
 {
     EDGE_TYPE type; //Type of edge
     vertex *pA, *pB;   //Vertices, connected by that edge
-    Point A, B;   //Star and end points
+    Point A, B;   //Start and end points
 
     Angle aA, aB;  //Start and end angles
     DIRECTION direction;   //Direction of an arc - 1 - clockwise, -1 - counter-clockwise

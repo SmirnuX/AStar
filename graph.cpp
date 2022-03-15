@@ -34,7 +34,10 @@ bool graph::IsWay()
 void graph::clear()
 {
     for (unsigned int i=0; i < vertices.size(); i++)
+    {
+        delete vertices[i]->point;
         delete vertices[i];
+    }
     vertices.clear();
     edges.clear();
 }
@@ -69,12 +72,12 @@ void ShowObstacle(obstacle* obst)
             }
             else
             {
-                penn.setColor(QColor(90, 90, 90));
-                pntr.setPen(penn);
-                pntr.drawEllipse(obst->outline[i].cx - obst->outline[i].r, obst->outline[i].cy - obst->outline[i].r,
-                                 2*obst->outline[i].r, 2*obst->outline[i].r);
-                penn.setColor(QColor(255,0,0));
-                pntr.setPen(penn);
+//                penn.setColor(QColor(90, 90, 90));
+//                pntr.setPen(penn);
+//                pntr.drawEllipse(obst->outline[i].cx - obst->outline[i].r, obst->outline[i].cy - obst->outline[i].r,
+//                                 2*obst->outline[i].r, 2*obst->outline[i].r);
+//                penn.setColor(QColor(255,0,0));
+//                pntr.setPen(penn);
                 double sa, ea;
                 sa = -5760.0 / (2 * M_PI) * obst->outline[i].aA.GetR();
                 ea = -5760.0 / (2 * M_PI) * (obst->outline[i].aB.GetR()-obst->outline[i].aA.GetR());
@@ -105,6 +108,7 @@ void DeleteObstacle(obstacle* obst) //Deleting obstacle
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle)    //Vertex creation
 {
     vertex* res = new vertex;
+    res->poly_i = -1;
     res->point = new Point(x, y);
     res->parent = _parent;
     res->angle = _angle;
@@ -114,6 +118,7 @@ vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle)    //Verte
 vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle)    //Vertex creation
 {
     vertex* res = new vertex;
+    res->poly_i = -1;
     res->point = new Point(pt->GetX(), pt->GetY());
     res->parent = _parent;
     res->angle = _angle;
@@ -289,78 +294,176 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
     for (int i = 0; i < count; i++)
     {
         //"Brothers" search
-        if (objects[i].shape != CIRCLE)
+        if (objects[i].shape != CIRCLE && objects[i].shape != POLYGON)
             continue;
-        for (unsigned int j = 0; j < result->vertices.size(); j++)   //Looking for every vertex with this obstacle as parent
+        if (objects[i].shape == CIRCLE) //DIVIDE INTO FUNCTION
         {
-            if (result->vertices[j]->parent != objects+i)
-                continue;
-            brothers.push_back(result->vertices[j]);
-            for (int k = brothers.size()-1; k > 0; k--) //Sort by angle
+            for (unsigned int j = 0; j < result->vertices.size(); j++)   //Looking for every vertex with this obstacle as parent
             {
-                if (brothers[k]->angle.GetR() < brothers[k-1]->angle.GetR())
-                {
-                    vertex* temp = brothers[k];
-                    brothers[k] = brothers[k-1];
-                    brothers[k-1] = temp;
-                }
-            }
-        }
-        //Creating connecting arcs
-        int n = brothers.size();
-        edge arc;
-        arc.chosen = false;
-        arc.type = ARC_CIRCLE;
-        arc.cx = objects[i].point->GetX();
-        arc.cy = objects[i].point->GetY();
-        arc.r = objects[i].r;
-
-        for (int j = 0; j < n; j++) //Looking for every vertex on this obstacle
-        {
-            int next = j+1;
-            if (next > n-1)
-                next = 0;
-
-            //Checking for intersection with other circles
-            bool intersec = false;
-            CircleCollider ptA_c(objects[i].point->GetX(),
-                                objects[i].point->GetY(), arc.r);
-            for (int k = 0; k < count; k++)
-            {
-                if (objects[k].shape != CIRCLE || k == i)
+                if (result->vertices[j]->parent != objects+i)
                     continue;
-                CircleCollider cr_c(objects[k].point->GetX(),
-                                    objects[k].point->GetY(),
-                                    objects[k].r);
-                if (ptA_c.CheckCollision(&cr_c))
+                brothers.push_back(result->vertices[j]);
+                for (int k = brothers.size()-1; k > 0; k--) //Sort by angle
                 {
-                    //If there is collision - looking for angle of collision
-                    double int_angle = direction_to_point(objects[i].point->GetX(), objects[i].point->GetY(),
-                                                          objects[k].point->GetX(), objects[k].point->GetY());
-                    //Is angle of collision inside of an arc?
-                    double min_a = brothers[j]->angle.GetR();
-                    double max_a = brothers[next]->angle.GetR();
-                    if (min_a > max_a)
-                       min_a -= 2*M_PI;
-                    if (min_a <= int_angle && int_angle <= max_a)
+                    if (brothers[k]->angle.GetR() < brothers[k-1]->angle.GetR())
                     {
-                        intersec = true;
-                        break;
+                        vertex* temp = brothers[k];
+                        brothers[k] = brothers[k-1];
+                        brothers[k-1] = temp;
                     }
                 }
             }
-            if (intersec)
-                continue;
-            //Getting length of arc
-            arc.aA = brothers[j]->angle;
-            arc.aB = brothers[next]->angle;
-            arc.pA = brothers[j];
-            arc.pB = brothers[next];
-            if (brothers[next]->angle.GetR() < brothers[j]->angle.GetR())
-                arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.r;
-            else
-                arc.length = fabs((brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.r);
-            result->edges.push_back(arc);
+            //Creating connecting arcs
+            int n = brothers.size();
+            edge arc;
+            arc.chosen = false;
+            arc.passed = false;
+            arc.type = ARC_CIRCLE;
+            arc.direction = COUNTERCLOCKWISE;
+            arc.cx = objects[i].point->GetX();
+            arc.cy = objects[i].point->GetY();
+            arc.r = objects[i].r;
+
+            for (int j = 0; j < n; j++) //Looking for every vertex on this obstacle
+            {
+                int next = j+1;
+                if (next > n-1)
+                    next = 0;
+
+                //Checking for intersection with other circles
+                bool intersec = false;
+                CircleCollider ptA_c(objects[i].point->GetX(),
+                                    objects[i].point->GetY(), arc.r);
+                for (int k = 0; k < count; k++)
+                {
+                    if (objects[k].shape != CIRCLE || k == i)
+                        continue;
+                    CircleCollider cr_c(objects[k].point->GetX(),
+                                        objects[k].point->GetY(),
+                                        objects[k].r);
+                    if (ptA_c.CheckCollision(&cr_c))
+                    {
+                        //If there is collision - looking for angle of collision
+                        double int_angle = direction_to_point(objects[i].point->GetX(), objects[i].point->GetY(),
+                                                              objects[k].point->GetX(), objects[k].point->GetY());
+                        //Is angle of collision inside of an arc?
+                        double min_a = brothers[j]->angle.GetR();
+                        double max_a = brothers[next]->angle.GetR();
+                        if (min_a > max_a)
+                           min_a -= 2*M_PI;
+                        if (min_a <= int_angle && int_angle <= max_a)
+                        {
+                            intersec = true;
+                            break;
+                        }
+                    }
+                }
+                if (intersec)
+                    continue;
+                //Getting length of arc
+                arc.aA = brothers[j]->angle;
+                arc.aB = brothers[next]->angle;
+                arc.pA = brothers[j];
+                arc.pB = brothers[next];
+                if (brothers[next]->angle.GetR() < brothers[j]->angle.GetR())
+                    arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.r;
+                else
+                    arc.length = fabs((brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.r);
+                result->edges.push_back(arc);
+            }
+        }
+        else if (objects[i].shape == POLYGON) //DIVIDE INTO FUNCTION
+        {
+            for (unsigned int j = 0; j < result->vertices.size(); j++)   //Looking for every vertex with this obstacle as parent
+            {
+                if (result->vertices[j]->parent != objects+i)
+                    continue;
+                brothers.push_back(result->vertices[j]);
+                assert(result->vertices[j]->poly_i != -1);  //If vertex is on polygon obstacle, it should have index
+                for (int k = brothers.size()-1; k > 0; k--) //Sort by edge index [PRIMARY SORT]
+                {
+                    if (brothers[k]->poly_i < brothers[k-1]->poly_i)
+                    {
+                        vertex* temp = brothers[k];
+                        brothers[k] = brothers[k-1];
+                        brothers[k-1] = temp;
+                    }
+                }
+            }
+            unsigned int _i = 0;    //Number in brothers vector
+            edge* obst_outline = objects[i].outline;
+            for (int j = 0; j < objects[i].num; j++)
+            {
+                if (obst_outline[j].type == LINEAR)
+
+                //Creating temp vector - only for current arc of polygon
+                std::vector<vertex*> temp_vec;
+                for (int k = _i; k < brothers.size(); k++)
+                {
+                    if (brothers[k]->poly_i == j)
+                        temp_vec.push_back(brothers[k]);
+                    else
+                    {
+                        _i = k; //End of current segment
+                        break;
+                    }
+                }
+
+                double startA = obst_outline[j].aA.GetR();
+                double endA = obst_outline[j].aB.GetR();
+                if (endA < startA)
+                    endA += 2 * M_PI;
+                //Sort by angle
+                std::sort(temp_vec.begin(), temp_vec.end(),
+                          [&] (vertex* a, vertex* b) -> bool
+                {
+                    double aA = a->angle.GetR() > startA ? a->angle.GetR() : a->angle.GetR() + 2*M_PI;
+                    double bA = b->angle.GetR() > startA ? b->angle.GetR() : b->angle.GetR() + 2*M_PI;
+                    return  aA < bA;
+                });
+                //Connect edges
+                edge arc;
+                arc.chosen = false;
+                arc.passed = false;
+                arc.type = ARC_CIRCLE;
+                arc.direction = COUNTERCLOCKWISE;
+                arc.cx = obst_outline[j].cx;
+                arc.cy = obst_outline[j].cy;
+                arc.r = obst_outline[j].r;
+                //First connection
+                arc.pA = last;
+                arc.pB = temp_vec[0];
+                arc.aA = arc.pA->angle;
+                arc.aB = arc.pB->angle;
+                if (arc.aB.GetR() < arc.aA.GetR())
+                    arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                else
+                    arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                result->edges.push_back(arc);
+                //Middle connections
+                for (int k = 0; k < temp_vec.size()-1; k++)
+                {
+                    arc.pA = temp_vec[k];
+                    arc.pB = temp_vec[k+1];
+                    arc.aA = arc.pA->angle;
+                    arc.aB = arc.pB->angle;
+                    if (arc.aB.GetR() < arc.aA.GetR())
+                        arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                    else
+                        arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                    result->edges.push_back(arc);
+                }
+                //Last connection
+                arc.pA = temp_vec[temp_vec.size()-1];
+                arc.pB = next;
+                arc.aA = arc.pA->angle;
+                arc.aB = arc.pB->angle;
+                if (arc.aB.GetR() < arc.aA.GetR())
+                    arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                else
+                    arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                result->edges.push_back(arc);
+            }
         }
         //Clearing
         brothers.clear();
@@ -844,6 +947,7 @@ struct temp_edges get_edges_point_to_polygon(std::vector<vertex*>& verts, std::v
                                      curr_edge->cy + curr_edge->r * sin(tang_angle),
                                      poly, tang_angle));
             line.pA = verts[j];
+            verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
             line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
             edges.push_back(line);
@@ -862,8 +966,9 @@ struct temp_edges get_edges_point_to_polygon(std::vector<vertex*>& verts, std::v
                                      pt->point->GetY(), pt));
             verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(tang_angle),
                                      curr_edge->cy + curr_edge->r * sin(tang_angle),
-                                     poly, tang_angle));
+                                     poly, tang_angle));        
             line.pA = verts[j];
+            verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
             line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
             edges.push_back(line);
@@ -923,6 +1028,7 @@ struct temp_edges get_edges_circle_to_polygon(std::vector<vertex*>& verts, std::
                                      curr_edge->cy + curr_edge->r * sin(tang_angle),
                                      poly, tang_angle));
             line.pA = verts[j];
+            verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
             line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
             edges.push_back(line);
@@ -944,6 +1050,7 @@ struct temp_edges get_edges_circle_to_polygon(std::vector<vertex*>& verts, std::
                                      curr_edge->cy + curr_edge->r * sin(tang_angle),
                                      poly, tang_angle));
             line.pA = verts[j];
+            verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
             line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
             edges.push_back(line);
@@ -970,6 +1077,7 @@ struct temp_edges get_edges_circle_to_polygon(std::vector<vertex*>& verts, std::
                                      curr_edge->cy + curr_edge->r * sin(poly_tang_angle),
                                      poly, poly_tang_angle));
             line.pA = verts[j];
+            verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
             line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
             edges.push_back(line);
@@ -992,7 +1100,9 @@ struct temp_edges get_edges_circle_to_polygon(std::vector<vertex*>& verts, std::
                                      curr_edge->cy + curr_edge->r * sin(poly_tang_angle),
                                      poly, poly_tang_angle));
             line.pA = verts[j];
+            verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
+            verts[j+1]->poly_i = i;
             line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
             edges.push_back(line);
             count.temp_vertices_count += 2;
@@ -1020,7 +1130,7 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
     {
         for (int j = 0; j < B->num; j++)
         {
-            if (A->outline[i].type == LINEAR || B->outline[i].type == LINEAR)
+            if (A->outline[i].type == LINEAR || B->outline[j].type == LINEAR)
                 continue;
             edge* a_edge = A->outline + i;
             edge* b_edge = B->outline + j;
@@ -1049,7 +1159,9 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
                                          b_edge->cy + b_edge->r * sin(tang_angle),
                                          B, tang_angle));
                 line.pA = verts[k];
+                verts[k]->poly_i = i;
                 line.pB = verts[k+1];
+                verts[k+1]->poly_i = j;
                 line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
                 edges.push_back(line);
                 count.temp_vertices_count += 2;
@@ -1074,7 +1186,9 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
                                          b_edge->cy + b_edge->r * sin(tang_angle),
                                          B, tang_angle));
                 line.pA = verts[k];
+                verts[k]->poly_i = i;
                 line.pB = verts[k+1];
+                verts[k+1]->poly_i = j;
                 line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
                 edges.push_back(line);
                 count.temp_vertices_count += 2;
@@ -1104,7 +1218,9 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
                                          b_edge->cy + b_edge->r * sin(poly_tang_angle),
                                          B, poly_tang_angle));
                 line.pA = verts[k];
+                verts[k]->poly_i = i;
                 line.pB = verts[k+1];
+                verts[k+1]->poly_i = j;
                 line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
                 edges.push_back(line);
                 count.temp_vertices_count += 2;
@@ -1130,7 +1246,9 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
                                          b_edge->cy + b_edge->r * sin(poly_tang_angle),
                                          B, poly_tang_angle));
                 line.pA = verts[k];
+                verts[k]->poly_i = i;
                 line.pB = verts[k+1];
+                verts[k+1]->poly_i = j;
                 line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
                 edges.push_back(line);
                 count.temp_vertices_count += 2;

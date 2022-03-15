@@ -1,4 +1,5 @@
 #include "game.h"
+#include <ratio>
 #include <QTime>
 extern QPixmap* picture;
 extern EntityStack* stack;
@@ -180,15 +181,6 @@ void game::paintEvent(QPaintEvent *) //Drawing buffer content
 {
     QPainter pntr(this);
     pntr.drawPixmap(0,0,width,height,*picture,0,0,width,height);
-
-    //Drawing UI
-    pntr.setPen(QColor(0,0,0));
-    pntr.drawText(10, 10, "Number of objects:\t " + QString::number(stack->size));
-    pntr.drawText(10, 20, "Press F1 to open debug menu");
-    pntr.drawText(10, 30, PAUSE?"PAUSED":"");
-    if (player->reload_timeout == 0)
-        pntr.drawText(10, 30, "Cannon ready");
-
 }
 
 void game::game_update()  //Function, called every frame
@@ -256,6 +248,7 @@ void game::game_update()  //Function, called every frame
         for (stack->Reset(); stack->current != NULL; stack->Next())
             stack->current->entity->collision_mask->ShowCollider();
 
+
     QTime start = QTime::currentTime();
     QTime graph_end;
     QTime path_end;
@@ -267,6 +260,7 @@ void game::game_update()  //Function, called every frame
             delete path_graph;
         }
 
+        auto chr_start = std::chrono::high_resolution_clock::now();
         //Clearing ol obstacles
         if (obst != nullptr)
         {
@@ -292,18 +286,19 @@ void game::game_update()  //Function, called every frame
 
         path_graph = build_graph(obst, obst_num);
         graph_end = QTime::currentTime();
+        auto chr_graph_end = std::chrono::high_resolution_clock::now();
         path_graph->AStar();
         player->graph_to_path(path_graph);
         path_end = QTime::currentTime();
-
-        int delta1 = start.msecsTo(graph_end);
-        int delta2 = graph_end.msecsTo(path_end);
-        qDebug() << "Graph built in:" << delta1;
-        qDebug() << "Path built in:" << delta2;
+        auto chr_path_end = std::chrono::high_resolution_clock::now();
+//        using namespace std::chrono_literals;
+        build_time = chr_graph_end - chr_start;
+        pathfind_time = chr_path_end - chr_graph_end;
         toBuild = false;
     }
 
-    if (follow)
+
+    if (follow) //Path following
     {
         if (path_graph != nullptr)
         {
@@ -315,7 +310,7 @@ void game::game_update()  //Function, called every frame
     if (UI_ACTIVE)
         uiUpdate();
 
-    if (SHOW_PATH)
+    if (SHOW_PATH)  //Showing path, temp speeds and related stuff
     {
         if (path_graph != nullptr)
             path_graph->Show();
@@ -325,7 +320,16 @@ void game::game_update()  //Function, called every frame
         pntr.setPen(QColor(0, 0, 255));
         pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
     }
-    if (UI_MODE == GRAPH)
+    if (UI_MODE == COLLIDERS)
+    {
+        QPainter pntr(picture);
+        pntr.setPen(QColor(0,0,0));
+        pntr.drawText(10, 10, "F1 - HIDE, [F2 - COLLISION], F3 - GRAPH, F4 - PATH, F5 - EDITOR");
+        pntr.drawText(10, 20, "Number of objects:\t " + QString::number(stack->size));
+        if (player->reload_timeout == 0)
+            pntr.drawText(10, 30, "Cannon ready");
+    }
+    else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
     {
         int i = 2;
         for (visible->Reset(); visible->current!=NULL; visible->Next())
@@ -342,9 +346,18 @@ void game::game_update()  //Function, called every frame
             path_graph->Show(mouse_pos.x(), mouse_pos.y());
         }
         QPainter pntr(picture);
-        pntr.setPen(QColor(255,0,0));
         pntr.setPen(QColor(0, 0, 255));
+        pntr.setPen(QColor(0, 0, 0));
         pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
+        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, [F3 - GRAPH], F4 - PATH, F5 - EDITOR");   //Head of UI
+        if (path_graph != nullptr)
+        {
+            pntr.drawText(10, 20, "Number of vertices\t " + QString::number(path_graph->vertices.size()));
+            pntr.drawText(10, 30, "Number of edges\t " + QString::number(path_graph->edges.size()));
+            pntr.drawText(10, 40, "Last graph built in:\t" + QString::number(build_time.count()) + "ms");
+            pntr.drawText(10, 50, "Last path found in:\t" + QString::number(pathfind_time.count()) + "ms");
+        }
+
     }
     update();
 }

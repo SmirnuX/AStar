@@ -19,6 +19,7 @@
 #include "tanks.h"
 #include "list.h"
 #include "add_math.h"
+#include <chrono>
 
 extern QFile* path_log;
 
@@ -42,7 +43,11 @@ private:
     int width;  //Window width
     int height; //Height width
     bool key[7];    //Input buffer
+    //Path graph
     graph* path_graph;
+    std::chrono::duration<double, std::milli> build_time;
+    std::chrono::duration<double, std::milli> pathfind_time;
+
     EntityStack *visible;
     int target_x;
     int target_y;
