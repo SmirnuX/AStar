@@ -37,6 +37,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     ../build-Diplom_v2-Desktop_Qt_6_2_2_MinGW_64_bit-Debug/path_log.txt \
-    TODO_list
+    TODO_list \
+    qt.conf
 
 STATECHARTS +=

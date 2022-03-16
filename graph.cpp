@@ -650,7 +650,7 @@ void graph::AStar() //Pathfinding
         if (back_curr == v_start)
         {
             found_way = true;
-            qDebug()<<"PATH LENGTH:" << sum_cost;
+            way_length = sum_cost;
             return;
         }
     }
@@ -672,9 +672,9 @@ void graph::Show()
             if (edges[i].chosen)
                 penn.setColor(QColor(0,255,0,160));
             else if (edges[i].passed)
-                penn.setColor(QColor(0,0,0,50));
+                penn.setColor(QColor(0,0,0,100));
             else
-                penn.setColor(QColor(0,0,0,30));
+                penn.setColor(QColor(0,0,0,50));
             pntr.setPen(penn);
             pntr.drawLine(edges[i].pA->point->GetX(), edges[i].pA->point->GetY(), edges[i].pB->point->GetX(), edges[i].pB->point->GetY());
         }
@@ -683,9 +683,9 @@ void graph::Show()
             if (edges[i].chosen)
                 penn.setColor(QColor(0,255,0,160));
             else if (edges[i].passed)
-                penn.setColor(QColor(0,0,255,160));
+                penn.setColor(QColor(0,0,0,100));
             else
-                penn.setColor(QColor(255,0,0,30));
+                penn.setColor(QColor(0,0,0,50));
             pntr.setPen(penn);
             double sa, ea;
 
@@ -697,9 +697,6 @@ void graph::Show()
                          2*edges[i].r, 2*edges[i].r,
                          floor(sa), floor(ea));
         }
-        pntr.drawText((int)(edges[i].pA->point->GetX() + (edges[i].pB->point->GetX() - edges[i].pA->point->GetX())/2), //Отрисовка посередине
-                      (int)(edges[i].pA->point->GetY() + (edges[i].pB->point->GetY() - edges[i].pA->point->GetY())/2),
-                      QString::number(edges[i].length, 'f', 1));
     }
     penn.setColor(QColor(0,255,0,180));
     pntr.setPen(penn);
@@ -723,7 +720,7 @@ void graph::Show(int x, int y)  //Drawing graph with additional info
         if (edges[i].type == LINEAR)
         {
             LineCollider edge_coll(edges[i].pA->point->GetX(), edges[i].pA->point->GetY(),
-                                   edges[i].pB->point->GetY(), edges[i].pB->point->GetY());
+                                   edges[i].pB->point->GetX(), edges[i].pB->point->GetY());
             if (cursor.CheckCollision(&edge_coll) && selected_edge == -1)
             {
                 selected_edge = i;

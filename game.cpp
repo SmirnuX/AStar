@@ -124,6 +124,9 @@ bool game::event(QEvent* ev)   //Event handler
         case Qt::Key_F4:
             UI_MODE = PATH;
             break;
+        case Qt::Key_F5:
+            UI_MODE = OBJECTS;
+            break;
         }
         return true;
     }
@@ -170,10 +173,14 @@ void game::mousePressEvent(QMouseEvent *event)    //Mouse event handler
         double mouse_angle = -direction_to_point(player->GetX(), player->GetY(), event->pos().x(), event->pos().y());
         player->SetCannonAngle(Angle(mouse_angle) - player->GetAngle());
     }
-    else if (event->button() == Qt::LeftButton)
+    else if (event->button() == Qt::LeftButton && (UI_MODE == GRAPH || UI_MODE == PATH))
     {
         target_x = event->pos().x();
         target_y = event->pos().y();
+    }
+    else if (event->button() == Qt::LeftButton && UI_MODE == OBJECTS)
+    {
+
     }
 }
 
@@ -291,7 +298,7 @@ void game::game_update()  //Function, called every frame
         player->graph_to_path(path_graph);
         path_end = QTime::currentTime();
         auto chr_path_end = std::chrono::high_resolution_clock::now();
-//        using namespace std::chrono_literals;
+
         build_time = chr_graph_end - chr_start;
         pathfind_time = chr_path_end - chr_graph_end;
         toBuild = false;
@@ -347,6 +354,53 @@ void game::game_update()  //Function, called every frame
         }
         QPainter pntr(picture);
         pntr.setPen(QColor(0, 0, 255));
+        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
+        pntr.setPen(QColor(0, 0, 0));
+        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, [F3 - GRAPH], F4 - PATH, F5 - EDITOR");   //Head of UI
+        if (path_graph != nullptr)
+        {
+            pntr.drawText(10, 20, "Number of vertices\t " + QString::number(path_graph->vertices.size()));
+            pntr.drawText(10, 30, "Number of edges\t " + QString::number(path_graph->edges.size()));
+            pntr.drawText(10, 40, "Last graph built in:\t" + QString::number(build_time.count()) + "ms");
+            pntr.drawText(10, 50, "Last path found in:\t" + QString::number(pathfind_time.count()) + "ms");
+        }
+    }
+    else if (UI_MODE == PATH)   //Drawing graph, and some related info
+    {
+        QPainter pntr(picture);
+        pntr.setPen(QColor(0, 0, 0));
+        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, F3 - GRAPH, [F4 - PATH], F5 - EDITOR");   //Head of UI
+        if (path_graph != nullptr)
+        {
+            if (path_graph->found_way)
+            {
+                pntr.drawText(10, 20, "Path length:\t " + QString::number(path_graph->way_length));
+                pntr.drawText(10, 30, "Number of waypoints:\t " + QString::number(player->path->num));
+            }
+            else
+            {
+                pntr.drawText(10, 20, "Path not found");
+            }
+        }
+    }
+    else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
+    {
+        int i = 2;
+        for (visible->Reset(); visible->current!=NULL; visible->Next())
+        {
+            if (obst == nullptr)
+                break;
+            ShowObstacle(obst+i);
+            i++;
+        }
+
+        if (path_graph != nullptr)
+        {
+            QPoint mouse_pos = mapFromGlobal( QCursor::pos());
+            path_graph->Show(mouse_pos.x(), mouse_pos.y());
+        }
+        QPainter pntr(picture);
+        pntr.setPen(QColor(0, 0, 255));
         pntr.setPen(QColor(0, 0, 0));
         pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
         pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, [F3 - GRAPH], F4 - PATH, F5 - EDITOR");   //Head of UI
@@ -357,7 +411,6 @@ void game::game_update()  //Function, called every frame
             pntr.drawText(10, 40, "Last graph built in:\t" + QString::number(build_time.count()) + "ms");
             pntr.drawText(10, 50, "Last path found in:\t" + QString::number(pathfind_time.count()) + "ms");
         }
-
     }
     update();
 }

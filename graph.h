@@ -15,9 +15,9 @@ extern QPixmap* picture;
 
 class graph
 {
-private:
-    bool found_way;
 public:
+    bool found_way;
+    int way_length;
     std::vector<vertex*> vertices;
     std::vector<edge> edges;
 

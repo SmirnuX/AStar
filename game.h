@@ -30,10 +30,11 @@ class Tank;
 class EntityStack;
 
 enum uimode{
-    NONE,   //Show no ui
+    NONE,       //Show no ui
     COLLIDERS,  //Show collision masks
-    GRAPH,  //Show path graph
-    PATH    //Show built path
+    GRAPH,      //Show path graph
+    PATH,       //Show built path
+    OBJECTS     //Move objects
 };
 
 class game : public QMainWindow //Main window
