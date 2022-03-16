@@ -29,7 +29,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     Box* box1 = new Box(1200, 600);
     HexBox* hex1 = new HexBox(500, 300);
     Barell* circ1 = new Barell(800, 550);
-    WallChain* wc = new WallChain(100, 100);
+    WallChain* wc = new WallChain(900, 100);
     Wall* ln = new Wall(300, 200);
     //Entity stack creation
     stack = new EntityStack();

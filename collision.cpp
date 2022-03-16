@@ -1165,7 +1165,7 @@ obstacle PolygonCollider::GetOutline(double threshold)  //Get graph to ride roun
         Line line_1;
         Line line_2;
         Point* tmp = nullptr;
-        //Adding arc (if there is any intersection)
+        //Adding arc (if there isnt any intersection)
         if (intersec)
         {
             res.num--;
