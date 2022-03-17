@@ -11,6 +11,18 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
 {
     target_x = 0;
     target_y = 0;
+
+    stack = new EntityStack();  //Entity stack creation
+
+    QFile save(":/test.json");
+    qDebug() << save.open(QFile::ReadOnly);
+    loadSave(QJsonDocument().fromJson(save.readAll()));
+
+    player = new Tank(player_start_x, player_start_y);
+    stack->Add((Entity*) player);
+
+
+
     SHOW_COLLIDERS = true;
     UI_ACTIVE = false;
     Menu = new Ui_DebugMenu(this);
@@ -24,16 +36,14 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     for(int i=0;i<7;i++)    //Input buffer
         key[i]=false;
     //Tank creation
-    player = new Tank(500, 500);
+
     box = new Box(1000, 400);
     Box* box1 = new Box(1200, 600);
     HexBox* hex1 = new HexBox(500, 300);
     Barell* circ1 = new Barell(800, 550);
     WallChain* wc = new WallChain(900, 100);
     Wall* ln = new Wall(300, 200);
-    //Entity stack creation
-    stack = new EntityStack();
-    stack->Add((Entity*) player);
+
 //    stack->Add((Entity*) new Wall(1200, 500));
 //    stack->Add((Entity*) new EnemyTank(200, 200));   //Enemy tank
 
@@ -450,6 +460,21 @@ void game::uiUpdate()   //UI update
             this->setFocus();
         }
         i++;
+    }
+}
+
+bool game::loadSave(const QJsonDocument &json)
+{
+    QJsonObject player = json["player"].toObject();
+    player_start_x = player["x"].toDouble();
+    player_start_y = player["y"].toDouble();
+    QJsonArray objects = json["objects"].toArray();
+    for (int i = 0; i < objects.size(); i++)
+    {
+        if ((objects[i].toObject())["type"].toString() == "circle")
+        {
+            stack->Add((Entity*) new Barell((objects[i].toObject())["x"].toDouble(), (objects[i].toObject())["y"].toDouble()));
+        }
     }
 }
 

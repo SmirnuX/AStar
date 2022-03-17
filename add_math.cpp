@@ -281,7 +281,9 @@ bool arc_line_collision(Circle crc, Line ln, double min_ang, double max_ang)    
     {
         qDebug() << "Circle: " << crc.GetX() <<", " << crc.GetY() << ", R: " << crc.GetR();
         qDebug() << "Line: " << ln.GetMinX() <<", " << ln.GetMinY() <<"; " << ln.GetMaxX() <<", " << ln.GetMaxY();
-        throw std::runtime_error("[ARC_LINE_COLLISION] Unexpected error. Somehow line and its normal do not intersect");
+//        throw std::runtime_error("[ARC_LINE_COLLISION] Unexpected error. Somehow line and its normal do not intersect");
+        qDebug() << ("[ARC_LINE_COLLISION] Unexpected error. Somehow line and its normal do not intersect");
+        return true;
     }
     if (!intersect(ln.GetMinX(), ln.GetMaxX(), nearest_pt->GetX(), nearest_pt->GetX()) ||
         !intersect(ln.GetMinY(), ln.GetMaxY(), nearest_pt->GetY(), nearest_pt->GetY()) )

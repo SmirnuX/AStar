@@ -725,19 +725,38 @@ void graph::Show(int x, int y)  //Drawing graph with additional info
             {
                 selected_edge = i;
                 penn.setColor(QColor(0,255,255,160));
+                penn.setWidth(3);
             }
             else if (edges[i].chosen)
+            {
                 penn.setColor(QColor(0,255,0,160));
+                penn.setWidth(3);
+            }
             else if (edges[i].passed)
-                penn.setColor(QColor(0,0,0,50));
+            {
+                penn.setColor(QColor(0,0,255,160));
+                penn.setWidth(1);
+            }
             else
-                penn.setColor(QColor(0,0,0,30));
+            {
+                penn.setColor(QColor(255,0,0,30));
+                penn.setWidth(1);
+            }
             pntr.setPen(penn);
             pntr.drawLine(edges[i].pA->point->GetX(), edges[i].pA->point->GetY(), edges[i].pB->point->GetX(), edges[i].pB->point->GetY());
         }
         else
         {
-            if (edges[i].chosen)
+            if (arc_line_collision(Circle(edges[i].cx, edges[i].cy, edges[i].r),
+                                   Line(Point(x-5, y-5), Point(x+5, y+5)),
+                                   edges[i].aA.GetR(), edges[i].aB.GetR())
+                     && selected_edge == -1)
+            {
+                selected_edge = i;
+                penn.setColor(QColor(0,255,255,160));
+                penn.setWidth(3);
+            }
+            else if (edges[i].chosen)
             {
                 penn.setColor(QColor(0,255,0,160));
                 penn.setWidth(3);
@@ -788,12 +807,19 @@ void graph::Show(int x, int y)  //Drawing graph with additional info
     }
     pntr.drawEllipse(x - 2, y - 2, 4, 4);
     penn.setWidth(2);
-    penn.setColor(QColor(0, 255, 255));
+    penn.setColor(QColor(1, 1, 1));
     pntr.setPen(penn);
     if (selected_edge != -1)
     {
         pntr.drawText(x + 50, y + 50,
                       QString("Length: ") + QString::number(edges[selected_edge].length, 'f', 1));
+        if (edges[selected_edge].type == ARC_CIRCLE)
+        {
+            pntr.drawText(x + 50, y + 60,
+                          QString("Start angle: ") + QString::number(edges[selected_edge].aA.GetD(), 'f', 1));
+            pntr.drawText(x + 50, y + 70,
+                          QString("End angle: ") + QString::number(edges[selected_edge].aB.GetD(), 'f', 1));
+        }
     }
     if (selected_vertex != -1)
     {
