@@ -449,10 +449,10 @@ QString HexBox::GetName()
 }
 
 
-Barell::Barell(double _x, double _y):Entity(_x, _y)
+Barell::Barell(double _x, double _y, double _a):Entity(_x, _y)
 {
-    a = 50;
-    collision_mask = (Collider*) new CircleCollider(_x, _y, a);
+    a = _a;
+    collision_mask = (Collider*) new CircleCollider(_x, _y, _a);
 }
 
 void Barell::Show()

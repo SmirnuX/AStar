@@ -168,7 +168,7 @@ public:
 class Barell: public Entity //Circle box
 {
 public:
-    Barell(double _x, double _y);
+    Barell(double _x, double _y, double _a);
     double a;   //radius of box
     void Show();
 

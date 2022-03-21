@@ -40,7 +40,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     box = new Box(1000, 400);
     Box* box1 = new Box(1200, 600);
     HexBox* hex1 = new HexBox(500, 300);
-    Barell* circ1 = new Barell(800, 550);
+    Barell* circ1 = new Barell(800, 550, 50);
     WallChain* wc = new WallChain(900, 100);
     Wall* ln = new Wall(300, 200);
 
@@ -473,7 +473,14 @@ bool game::loadSave(const QJsonDocument &json)
     {
         if ((objects[i].toObject())["type"].toString() == "circle")
         {
-            stack->Add((Entity*) new Barell((objects[i].toObject())["x"].toDouble(), (objects[i].toObject())["y"].toDouble()));
+            stack->Add((Entity*) new Barell((objects[i].toObject())["x"].toDouble(),
+                                            (objects[i].toObject())["y"].toDouble(),
+                                            (objects[i].toObject())["r"].toDouble()));
+        }
+        else if ((objects[i].toObject())["type"].toString() == "poly")
+        {
+            int num = qFloor((objects[i].toObject())["num"].toDouble());
+
         }
     }
 }
