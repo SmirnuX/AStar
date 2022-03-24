@@ -1213,6 +1213,7 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
     count.temp_vertices_count = 0;
     count.temp_edges_count = 0;
 
+
     for (int i = 0; i < A->num; i++)
     {
         for (int j = 0; j < B->num; j++)
