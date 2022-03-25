@@ -12,6 +12,10 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     target_x = 0;
     target_y = 0;
 
+    //Graphs intitializa
+    for (int i = 0; i < SPEED_GUI_SIZE; i++)
+        speeds[i] = 0;
+
     stack = new EntityStack();  //Entity stack creation
 
     QFile save(":/test.json");
@@ -323,6 +327,13 @@ void game::game_update()  //Function, called every frame
         }
     }
 
+    //Graph updating
+    for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
+    {
+        speeds[i] = speeds[i+1];
+    }
+    speeds[SPEED_GUI_SIZE-1] = player->GetSpeed();
+
     //Showing menu
     if (UI_ACTIVE)
         uiUpdate();
@@ -392,6 +403,18 @@ void game::game_update()  //Function, called every frame
                 pntr.drawText(10, 20, "Path not found");
             }
         }
+        //Drawing speed graph
+        pntr.setPen(QColor(0, 0, 200));
+        int maxy = 40;
+        int miny = 80;
+        int stepx = 2;
+        int maxspeed = 4;
+        for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
+        {
+            pntr.drawLine(i*stepx, miny + speeds[i]/maxspeed*(maxy-miny),
+                          (i+1)*stepx, miny + speeds[i+1]/maxspeed*(maxy-miny));
+        }
+
     }
     else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
     {

@@ -145,128 +145,112 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
         path->pts[i].s = temp_speeds[i];
         path->pts[i].direction = temp_path[i].direction;
     }
+    path->i = 0;
 
     delete[] temp_speeds;
-//    for (int i = 0; i < MAX_POINTS; i++)
-//    {
-//        edge curr = temp_path[path_i];
-//        if (curr.type == ARC_CIRCLE)  //Arc traversal
-//        {
-//            //Acceleration to max possible speed
-//            if (path_speed < temp_speeds[path_i+1] - EPSILON)
-//            {
-//                path_speed += acc - friction;
-//                if (path_speed > temp_speeds[path_i+1])
-//                    path_speed = temp_speeds[path_i+1];
-//            }
-//            else if (path_speed > temp_speeds[path_i+1] + EPSILON)  //Or braking
-//            {
-//                path_speed -= dec + friction;
-//                if (path_speed < temp_speeds[path_i+1])
-//                    path_speed = temp_speeds[path_i+1];
-//            }
-//            //Rotation
-//            double angle_diff = 2 * safe_asin(path_speed / (2 * curr.rA));  //alpha = 2 * asin(L/2R) - difference between current angle on circle and next
-//            Angle start, end;
-//            start = curr.aA;
-//            end = curr.aB;
-//            if (start > end)
-//                rotation = -rotation;
-//            if (fabs(rotation) <= rot_speed.GetR())
-//            {
-//                path_angle += rotation;
-//            }
-//            else
-//            {
-//                path_angle += sign(rotation) * rot_speed.GetR();
-//            }
-//        }
-//        else    //Straight line traversal
-//        {
-//            Angle line_angle(direction_to_point(path_x, path_y, curr.B.GetX(), curr.B.GetY())); //Direction to end of line
-//            double dist = distance(path_x, path_y, curr.B.GetX(), curr.B.GetY());
-//            double temp_acc_path = ((path_speed+acc)*(path_speed+acc) - temp_speeds[path_i+1] * temp_speeds[path_i+1]) / (2 * dec);
-//            if (temp_acc_path < dist-(path_speed+acc))
-//                path_speed+=acc;
-//            else
-//            {
-//                temp_acc_path = ((path_speed)*(path_speed) - temp_speeds[path_i+1] * temp_speeds[path_i+1]) / (2 * dec);    //without acceleration
-//                if (temp_acc_path >= dist-path_speed)
-//                    path_speed-=dec;
-//            }
-//            if ((path_angle - line_angle).GetR() < rot_speed.GetR())
-//                path_angle = line_angle;
-//            else if (path_angle < line_angle)
-//                path_angle += rot_speed;
-//            else
-//                path_angle -= rot_speed;
-//        }
-//        //Check, if already in the end of path segment
-//        if (curr.type == ARC_CIRCLE)
-//        {
-//            Angle real_angle(direction_to_point(path_x, path_y, curr.cx, curr.cy));
-//            Angle start = curr.aA;
-//            Angle end = curr.aB;
-//            if (start < end && end < real_angle)
-//                path_i++;
-//            else if (start > end && end > real_angle)
-//                path_i++;
-//        }
-//        else
-//        {
-//            if (curr.A.GetX() < curr.B.GetX())
-//            {
-//                if (path_x > curr.B.GetX())
-//                    path_i++;
-//            }
-//            else
-//            {
-//                if (path_x < curr.B.GetX())
-//                    path_i++;
-//            }
-//        }
-//        //Adding new path point
-//        path_x += path_speed * cos(path_angle.GetR());
-//        path_y += path_speed * sin(path_angle.GetR());
-//        path->a[i] = path_angle;
-//        path->s[i] = path_speed;
-//        path->x[i] = path_x;
-//        path->y[i] = path_y;
-//        log_str << i << "\t" << path_angle.GetD() << "d\t" << path_speed <<
-//                   "\t x = " << path_x << "\t y = " << path_y << "\n";
-//        if (path_i >= vertex_count) //End of path
-//        {
-//            path->num = i+1;
-//            break;
-//        }
-//    }
 }
 
 void Tank::FollowPath() //Actually follow built path
 {
+    //[!] Coords of tank are inverted, coords of path - not [!]
     if (path == NULL)
         return;
-//    if (path->s[path->i] > speed)
-//        Accelerate(path->s[path->i] - speed);
-//    else
-//        Deccelerate(speed - path->s[path->i]);
-//    //Tank angle - clockwise, nut path angle - counter clockwise
-//    qDebug() << anglediff(-path->a[path->i], angle);
-//    if (fabs(anglediff(-path->a[path->i], angle)) < rot_speed)   //If difference between target and current angles can be solved by one frsme
-//        SetAngle(-path->a[path->i]);
-//    else if (fabs(anglediff(-path->a[path->i], angle)) > EPSILON)  //If there is difference, but it can't be solved in moment
-//    {
-//        if (angle > -path->a[path->i])
-//            Turn(-rot_speed);
-//        else
-//            Turn(rot_speed);
-//    }
-//    path->i++;
-//    if (path->i == path->num || (almostEq(x, path->final_x, 2) && almostEq(y, path->final_y, 2)))
-//    {
-//        delete path;
-//        path = nullptr;
-//    }
+    if (path->i >= path->num)    //If path completed
+        return;
+    int i = path->i;
+    pathpoint* next_pt = path->pts + i;
+    if (path->pts[i].circle)    //If riding a circle
+    {
+        Angle dir_to_obj(direction_to_point(next_pt->c_x, next_pt->c_y, x, y)); //Angle between circle and object
+        double temp_max_speed = next_pt->s;
+        double delta;   //Difference between normal angle and current
+        if (next_pt->direction == COUNTERCLOCKWISE)
+            delta = fabs(anglediff(-angle, dir_to_obj.normalL()));
+        else
+            delta = fabs(anglediff(-angle, dir_to_obj.normalR()));
+        if (delta < rot_speed.GetR())
+        {
+            if (speed <= temp_max_speed)
+            {
+                Accelerate(temp_max_speed - speed); //If there is room to accelerate, and angle isn't far from normal
+            }
+            Angle target_angle;
+            Angle beta = safe_asin(speed / (2 * next_pt->c_r)); //Half of central angle of chord with length equal to speed
+            if (next_pt->direction == COUNTERCLOCKWISE)
+            {
+                target_angle = dir_to_obj.normalL() + beta;
+                RotateTo(-target_angle, CLOCKWISE);
+            }
+            else
+            {
+                target_angle = dir_to_obj.normalR() - beta;
+                RotateTo(-target_angle, COUNTERCLOCKWISE);
+            }
+
+            Angle dir_to_obj_next(direction_to_point(next_pt->c_x, next_pt->c_y,
+                                                     x + speed * cos(angle.GetR()), y - speed * sin(angle.GetR()) ));
+            //Check if object passed end of arc
+            if (angle_between(
+                        next_pt->direction == COUNTERCLOCKWISE ? dir_to_obj.GetR() : dir_to_obj_next.GetR(),
+                        next_pt->e_a.GetR(),
+                        next_pt->direction == COUNTERCLOCKWISE ? dir_to_obj_next.GetR() : dir_to_obj.GetR() ))
+            {
+                path->i++;  //Go to next segment
+                return;
+            }
+        }
+        else    //If direction is wrong
+        {
+            Deccelerate(speed); //Attempt to full stop
+            if (next_pt->direction == CLOCKWISE)   //Turn in direction, opposite to arc direction (to not crash into arc)
+                RotateR();
+            else
+                RotateL();
+        }
+    }
+    else    //If linear
+    {
+        double PATH_EPS = 20;
+        Angle max_delta(15, DEGREES);   //Set max delta to 15 degrees
+        Angle direction_to_pt(direction_to_point(x, y, next_pt->x, next_pt->y));
+        if (fabs(anglediff(-direction_to_pt, angle)) < max_delta.GetR())
+        {
+            RotateTo(-direction_to_pt);
+            //Deciding, whether should object accelerate or deccelerate
+            double Sacc = (max_speed * max_speed - speed * speed) / (2 * acc);  //Accelerating distance
+            double Sdec = (max_speed * max_speed - next_pt->s * next_pt->s ) / (2 * dec);   //Braking distance
+            double S = distance(x, y, next_pt->x, next_pt->y);  //Distance to end point
+            if (S < PATH_EPS)
+            {
+                path->i++;
+            }
+            if (Sacc + Sdec > S + PATH_EPS)
+            {
+                Accelerate();   //Reaching full speed
+            }
+            else
+            {
+                double braking_dist = (speed * speed - next_pt->s * next_pt->s ) / (2 * dec);
+                if (S <= braking_dist + PATH_EPS)
+                {
+                    Deccelerate(speed - next_pt->s);
+                }
+                else
+                {
+                    double Vmax = sqrt((2*acc*dec*S + speed*speed*dec + next_pt->s*next_pt->s*acc) / (acc + dec));
+                    Accelerate(Vmax - speed);
+                }
+            }
+        }
+        else    //Decreasing speed and trying to turn around
+        {
+            Deccelerate(speed);
+            RotateTo(-direction_to_pt);
+        }
+    }
+
+
+
 }
 
 void Tank::ShowPath()   //Drawing path

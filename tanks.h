@@ -48,6 +48,9 @@ public:
     void Deccelerate(double _dec);
 
     void Rotate(Angle delta_angle);   //Rotating
+
+    void RotateTo(Angle target_angle, DIRECTION dir = NODIRECTION);   //Rotating to specified angle
+
     void RotateL();
     void RotateR();
 };

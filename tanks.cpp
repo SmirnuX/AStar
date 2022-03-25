@@ -46,7 +46,7 @@ void BaseTank::Accelerate(double _acc)
     }
     else
     {
-        SetSpeed(GetSpeed() + _acc);
+        SetSpeed(GetSpeed() + acc);
     }
 
 }
@@ -64,7 +64,7 @@ void BaseTank::Deccelerate(double _dec)
     }
     else
     {
-        SetSpeed(GetSpeed() - _dec);
+        SetSpeed(GetSpeed() - dec);
     }
 }
 
@@ -75,6 +75,32 @@ void BaseTank::Rotate(Angle delta_angle)
     if (delta_angle.GetD() < -rot_speed.GetD())
         delta_angle = -rot_speed;
     Turn(delta_angle);
+}
+
+void BaseTank::RotateTo(Angle target_angle, DIRECTION dir)   //Rotating to specified angle
+{
+    if (dir == NODIRECTION)
+    {
+        //Selecting nearest direction
+        if (angle < target_angle)
+            dir = COUNTERCLOCKWISE;
+        else
+            dir = CLOCKWISE;
+    }
+    if (dir == COUNTERCLOCKWISE)
+    {
+        if ((target_angle - angle).GetD() < rot_speed.GetD())
+            angle = target_angle;
+        else
+            RotateL();
+    }
+    else
+    {
+        if ((angle - target_angle).GetD() < rot_speed.GetD())
+            angle = target_angle;
+        else
+            RotateR();
+    }
 }
 
 void BaseTank::RotateL()

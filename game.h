@@ -50,6 +50,8 @@ private:
     graph* path_graph;
     std::chrono::duration<double, std::milli> build_time;
     std::chrono::duration<double, std::milli> pathfind_time;
+    static const int SPEED_GUI_SIZE = 240;
+    double speeds[SPEED_GUI_SIZE];
 
     EntityStack *visible;
     int target_x;
@@ -85,7 +87,7 @@ struct pathpoint
     double x, y;
     double s;
     Angle s_a, e_a;
-    double direction;
+    DIRECTION direction;
     bool circle;
     double c_x, c_y, c_r;
 };
