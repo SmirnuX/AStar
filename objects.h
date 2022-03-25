@@ -185,4 +185,18 @@ public:
     QString GetName();
 };
 
+class Poly: public Entity
+{
+public:
+    Poly(QJsonArray& json);
+    void Show();
+
+    QString GetName();
+    ~Poly();
+private:
+    int num;
+    double* xs;
+    double* ys;
+};
+
 #endif // OBJECTS_H

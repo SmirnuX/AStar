@@ -17,15 +17,32 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
         speeds[i] = 0;
 
     stack = new EntityStack();  //Entity stack creation
+    visible = new EntityStack();
 
-    QFile save(":/test.json");
+    QFile save(":/circ_test.json");
     qDebug() << save.open(QFile::ReadOnly);
     loadSave(QJsonDocument().fromJson(save.readAll()));
 
     player = new Tank(player_start_x, player_start_y);
     stack->Add((Entity*) player);
 
+    box = new Box(1000, 400);
+    Box* box1 = new Box(1200, 600);
+    HexBox* hex1 = new HexBox(500, 300);
+    Barell* circ1 = new Barell(900, 550, 50);
+    Wall* ln = new Wall(300, 200);
 
+    stack->Add((Entity*) box);      //Obstacles
+    stack->Add((Entity*) box1);
+    stack->Add((Entity*) hex1);
+    stack->Add((Entity*) circ1);
+    stack->Add((Entity*) ln);
+
+    visible->Add((Entity*) box);
+    visible->Add((Entity*) box1);
+    visible->Add((Entity*) hex1);
+    visible->Add((Entity*) circ1);
+    visible->Add((Entity*) ln);
 
     SHOW_COLLIDERS = true;
     UI_ACTIVE = false;
@@ -39,39 +56,13 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     resize(width, height);
     for(int i=0;i<7;i++)    //Input buffer
         key[i]=false;
-    //Tank creation
 
-    box = new Box(1000, 400);
-    Box* box1 = new Box(1200, 600);
-    HexBox* hex1 = new HexBox(500, 300);
-    Barell* circ1 = new Barell(800, 550, 50);
-    WallChain* wc = new WallChain(900, 100);
-    Wall* ln = new Wall(300, 200);
-
-//    stack->Add((Entity*) new Wall(1200, 500));
-//    stack->Add((Entity*) new EnemyTank(200, 200));   //Enemy tank
-
-    stack->Add((Entity*) box);      //Obstacles
-    stack->Add((Entity*) box1);
-    stack->Add((Entity*) hex1);
-    stack->Add((Entity*) circ1);
-    stack->Add((Entity*) wc);
-    stack->Add((Entity*) ln);
-    //Visible obstacles
-    visible = new EntityStack();
-    visible->Add((Entity*) box);
-    visible->Add((Entity*) box1);
-    visible->Add((Entity*) hex1);
-    visible->Add((Entity*) circ1);
-    visible->Add((Entity*) wc);
-    visible->Add((Entity*) ln);
     //Updating this every 15ms
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
     timer->start(15);
-//    player->BuildPath(0, 0);
-    path_graph = nullptr;
 
+    path_graph = nullptr;
     uiUpdate();
 }
 
@@ -414,6 +405,16 @@ void game::game_update()  //Function, called every frame
             pntr.drawLine(i*stepx, miny + speeds[i]/maxspeed*(maxy-miny),
                           (i+1)*stepx, miny + speeds[i+1]/maxspeed*(maxy-miny));
         }
+        //Drawing angle and target angle
+        int cent_x = 800;
+        int cent_y = 40;
+        int cent_r = 38;
+        pntr.setPen(QColor(60,60,60));
+        pntr.drawEllipse(cent_x - cent_r, cent_y - cent_r, 2 * cent_r, 2 * cent_r);
+        pntr.setPen(QColor(0, 180, 0));
+        pntr.drawLine(cent_x, cent_y, cent_x + cent_r * cos(player->GetAngle().GetR()), cent_y - cent_r * sin(player->GetAngle().GetR()));
+        pntr.setPen(QColor(180,0,0));
+        pntr.drawLine(cent_x, cent_y, cent_x + cent_r * cos(player->target_ui_angle.GetR()), cent_y + cent_r * sin(player->target_ui_angle.GetR()));
 
     }
     else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
@@ -503,8 +504,17 @@ bool game::loadSave(const QJsonDocument &json)
         else if ((objects[i].toObject())["type"].toString() == "poly")
         {
             int num = qFloor((objects[i].toObject())["num"].toDouble());
-
+            QJsonArray pts = (objects[i].toObject())["pts"].toArray();
+            assert(num == pts.size());
+            stack->Add((Entity*) new Poly(pts));
         }
+    }
+    for (stack->Reset(); stack->current != NULL; stack->Next())
+    {
+        if (stack->current == NULL || stack->current->entity == NULL)
+            break;
+        qDebug() << stack->current->entity <<"|" <<stack->current->entity->GetX();
+//        visible->Add(stack->current->entity);
     }
 }
 

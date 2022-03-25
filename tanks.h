@@ -27,9 +27,14 @@ protected:
     int base_length;    //length
     int cannon_width;   //Cannon width
     int cannon_length;  //Cannon length
+
 public:
     Collider* FOV_collider;
     double reload_timeout;   //Timeout before next shot
+
+    //Debug info
+    Angle target_ui_angle;
+
     BaseTank(double _x, double _y);
     void Show();    //Drawing tank
     virtual void ShowTracks() = 0;  //Drawing tracks

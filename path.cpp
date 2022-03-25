@@ -168,7 +168,8 @@ void Tank::FollowPath() //Actually follow built path
             delta = fabs(anglediff(-angle, dir_to_obj.normalL()));
         else
             delta = fabs(anglediff(-angle, dir_to_obj.normalR()));
-        if (delta < rot_speed.GetR())
+        double DEG_EPS = 10 * rot_speed.GetR();
+        if (delta < DEG_EPS)
         {
             if (speed <= temp_max_speed)
             {
@@ -186,7 +187,7 @@ void Tank::FollowPath() //Actually follow built path
                 target_angle = dir_to_obj.normalR() - beta;
                 RotateTo(-target_angle, COUNTERCLOCKWISE);
             }
-
+            target_ui_angle = target_angle;
             Angle dir_to_obj_next(direction_to_point(next_pt->c_x, next_pt->c_y,
                                                      x + speed * cos(angle.GetR()), y - speed * sin(angle.GetR()) ));
             //Check if object passed end of arc
@@ -202,7 +203,7 @@ void Tank::FollowPath() //Actually follow built path
         else    //If direction is wrong
         {
             Deccelerate(speed); //Attempt to full stop
-            if (next_pt->direction == CLOCKWISE)   //Turn in direction, opposite to arc direction (to not crash into arc)
+            if (next_pt->direction == COUNTERCLOCKWISE)   //Turn in direction, opposite to arc direction (to not crash into arc)
                 RotateR();
             else
                 RotateL();
@@ -213,6 +214,7 @@ void Tank::FollowPath() //Actually follow built path
         double PATH_EPS = 20;
         Angle max_delta(15, DEGREES);   //Set max delta to 15 degrees
         Angle direction_to_pt(direction_to_point(x, y, next_pt->x, next_pt->y));
+        target_ui_angle = direction_to_pt;
         if (fabs(anglediff(-direction_to_pt, angle)) < max_delta.GetR())
         {
             RotateTo(-direction_to_pt);

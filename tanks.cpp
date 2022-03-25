@@ -8,6 +8,8 @@ BaseTank::BaseTank(double _x, double _y):MovingEntity(_x, _y, 0, 0, nullptr)
 {
     cannon_angle = 0; //Tank head angle
     reload_timeout = 0;   //Timeout before next shot
+
+    target_ui_angle = angle;
 }
 
 void BaseTank::Show()   //Drawing tank

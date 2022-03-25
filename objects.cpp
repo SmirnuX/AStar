@@ -468,4 +468,43 @@ QString Barell::GetName()
     return "Бочка";
 }
 
+Poly::Poly(QJsonArray& json) : Entity(0, 0)
+{
+    num = json.size();
+    xs = new double[num];
+    ys = new double[num];
+    for(int i = 0; i < num; i++)
+    {
+        xs[i] = (json[i].toObject())["x"].toDouble();
+        ys[i] = (json[i].toObject())["y"].toDouble();
+    }
+    collision_mask = (Collider*) new PolygonCollider(xs, ys, num, 0, 0);
+}
+
+void Poly::Show()
+{
+    QPainter painter(picture);
+    painter.setPen(QColor(0,0,0));
+    painter.setBrush(QColor(30,90,90));
+    QPointF* qpts = new QPointF[num];
+    for (int i = 0; i < num; i++)
+    {
+        qpts[i] = QPointF(xs[i], ys[i]);
+    }
+
+    painter.drawPolygon(qpts, num);
+    delete[] qpts;
+}
+
+QString Poly::GetName()
+{
+    return "Полигон";
+}
+
+Poly::~Poly()
+{
+    delete[] xs;
+    delete[] ys;
+}
+
 
