@@ -10,24 +10,24 @@ CONFIG += c++17
 
 SOURCES += \
     add_math.cpp \
+    cars.cpp \
     collision.cpp \
     game.cpp \
     graph.cpp \
     list.cpp \
     main.cpp \
     objects.cpp \
-    path.cpp \
-    tanks.cpp
+    path.cpp
 
 HEADERS += \
     add_math.h \
+    cars.h \
     collision.h \
     game.h \
     graph.h \
     graph_struct.h \
     list.h \
     objects.h \
-    tanks.h \
     ui.h
 
 # Default rules for deployment.
@@ -37,6 +37,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     ../build-Diplom_v2-Desktop_Qt_6_2_2_MinGW_64_bit-Debug/path_log.txt \
+    TODO.txt \
     TODO_list \
     qt.conf \
     test.json

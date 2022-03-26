@@ -108,6 +108,12 @@ class MovingEntity: public Entity  //Base moving entity class
 {
 protected:
     double speed;   //Speed of entity
+    double speed_x;
+    double speed_y;
+
+    //Properties
+    double friction;
+    bool directed_friction;
     double max_speed;
     Angle angle;    //Angle of entity
 public:
@@ -118,7 +124,8 @@ public:
 
     //Changing variables
     void Turn(Angle d_angle);    //Change angle by d_angle
-    void SetSpeed(double _speed);
+    void SetSpeed(double _speed);   //Change speed to _speed. Inertia is ignored
+    void ChangeSpeed(double delta_speed, const Angle &force_angle);    //Change speed by delta_speed amount with inertia taken into account
     void SetAngle(Angle _angle);    //Setting angle to _angle
 
     //Getting info

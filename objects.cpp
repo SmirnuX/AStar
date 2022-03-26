@@ -296,12 +296,38 @@ MovingEntity::MovingEntity(double _x, double _y, double _speed, Angle _angle, Co
     speed = _speed;
     angle = _angle;
     max_speed = 1000;
+    friction = 0;
+    directed_friction = false;
 }
 
 //Functions, that calls every tact
 void MovingEntity::AutoMove()    //Movement, depending of current speed and angle
 {
-    Drag(cos(angle.GetR()) * speed, -sin(angle.GetR()) * speed);
+    double speed_dir = direction_to_point(0, 0, speed_x, speed_y);
+    if (speed < friction)
+        speed_dir = angle.GetR();
+    double dir_friction = 0;
+    if (directed_friction)
+    {
+        double dir_fr = 0.1;
+        dir_friction =dir_fr * fabs(sin(Angle(angle.GetR() - speed_dir).GetR()));
+        //Directional friction is zero when angle and speed direction directed in same direction
+    }
+    //Friction
+    if (speed >= friction)
+    {
+        speed_x -= (friction + dir_friction) * cos(speed_dir);
+        speed_y -= (friction + dir_friction) * sin(speed_dir);
+        speed = distance(0,0,speed_x,speed_y);
+        if (speed < friction)
+        {
+            speed = 0;
+            speed_x = 0;
+            speed_y = 0;
+        }
+        else
+            Drag(speed_x, speed_y);
+    }
 }
 
 //Changing variables
@@ -320,6 +346,29 @@ void MovingEntity::SetSpeed(double _speed)
         speed = -max_speed;
     else
         speed = _speed;
+    speed_x = speed * cos(angle.GetR());
+    speed_y = speed * sin(angle.GetR());
+}
+
+void MovingEntity::ChangeSpeed(double delta_speed, const Angle& force_angle)
+{
+    speed_x += delta_speed * cos(force_angle.GetR());
+    speed_y += delta_speed * sin(force_angle.GetR());
+    speed = distance(0, 0, speed_x, speed_y);
+    if (speed > max_speed)
+    {
+        double speed_dir = direction_to_point(0, 0, speed_x, speed_y);
+        speed_x = max_speed * cos(speed_dir);
+        speed_y = max_speed * sin(speed_dir);
+        speed = distance(0, 0, speed_x, speed_y);
+    }
+    if (speed < -max_speed)
+    {
+        double speed_dir = direction_to_point(0, 0, speed_x, speed_y);
+        speed_x = -max_speed * cos(speed_dir);
+        speed_y = -max_speed * sin(speed_dir);
+        speed = distance(0, 0, speed_x, speed_y);
+    }
 }
 
 void MovingEntity::SetAngle(Angle _angle)

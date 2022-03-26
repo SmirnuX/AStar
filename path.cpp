@@ -1,4 +1,4 @@
-#include "tanks.h"
+#include "cars.h"
 extern EntityStack* stack;
 
 std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
@@ -66,7 +66,7 @@ std::vector<edge> get_path_from_graph(graph *gr)  //Getting path from graph
     return result;
 }
 
-void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical properties
+void Car::graph_to_path(graph* gr, uint target) //Getting path with physical properties
 {
     if (gr == nullptr)
         return;
@@ -87,22 +87,22 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
     //3. Calculating max speed for every segment
     double* temp_speeds = new double[segment_count];
     temp_speeds[segment_count-1] = 0;    //Object have to stop in last point
-    for (int i = temp_path.size()-2; i >= 0; i--)
+    for (int i = segment_count-2; i >= 0; i--)
     {
         double length = temp_path[i].length;
         //Calculating max speed for this segment
         double max_spd;
         if (i == 0) //Start speed
-            max_spd = speed;
+            max_spd = temp_speeds[1];
         else
         {
             if (temp_path[i].type == ARC_CIRCLE)
             {
                 max_spd = 2 * temp_path[i].r * sin(rot_speed.GetR()/2); //V = 2 * R * sin (max_rot / 2) - max speed you can stay on arc with
             }
-            else if (temp_path[i-1].type == ARC_CIRCLE)
+            else if (temp_path[i+1].type == ARC_CIRCLE)
             {
-                max_spd = 2 * temp_path[i-1].r * sin(rot_speed.GetR()/2);
+                max_spd = 2 * temp_path[i+1].r * sin(rot_speed.GetR()/2);
             }
             else
                 max_spd = max_speed;    //Should never happen
@@ -124,6 +124,7 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
                 max_spd = sqrt(fabs(temp_speeds[i+1] * temp_speeds[i+1] - 2*(acc - friction) * length));
         }
         temp_speeds[i] = max_spd;
+        qDebug() << "MAX_SPEED [" << i << "] = " << temp_speeds[i];
     }
 
     //3. Path building
@@ -150,9 +151,9 @@ void Tank::graph_to_path(graph* gr, uint target) //Getting path with physical pr
     delete[] temp_speeds;
 }
 
-void Tank::FollowPath() //Actually follow built path
+void Car::FollowPath() //Actually follow built path
 {
-    //[!] Coords of tank are inverted, coords of path - not [!]
+    //[!] Coords of car are inverted, coords of path - not [!]
     if (path == NULL)
         return;
     if (path->i >= path->num)    //If path completed
@@ -226,13 +227,14 @@ void Tank::FollowPath() //Actually follow built path
             {
                 path->i++;
             }
-            if (Sacc + Sdec > S + PATH_EPS)
+            if (Sacc + Sdec < S + PATH_EPS)
             {
-                Accelerate();   //Reaching full speed
+                Accelerate();   //There is possibility to reach maximum speed and sucesfully drop it
             }
             else
             {
-                double braking_dist = (speed * speed - next_pt->s * next_pt->s ) / (2 * dec);
+                double braking_dist = (speed * speed - next_pt->s * next_pt->s ) / (2 * dec);   //Braking distance from current speed
+                qDebug() << "SHOULD I BRAKE?: " << braking_dist <<'<'<<S;
                 if (S <= braking_dist + PATH_EPS)
                 {
                     Deccelerate(speed - next_pt->s);
@@ -246,16 +248,13 @@ void Tank::FollowPath() //Actually follow built path
         }
         else    //Decreasing speed and trying to turn around
         {
-            Deccelerate(speed);
+            Deccelerate(speed - 0.5);
             RotateTo(-direction_to_pt);
         }
     }
-
-
-
 }
 
-void Tank::ShowPath()   //Drawing path
+void Car::ShowPath()   //Drawing path
 {
     if (path == nullptr)
         return;
@@ -294,4 +293,13 @@ void Tank::ShowPath()   //Drawing path
                 pntr.drawLine(path->pts[i-1].x, path->pts[i-1].y, path->pts[i].x, path->pts[i].y);
         }
     }
+}
+
+double Car::GetPathMaxSpeed()
+{
+    if (path == nullptr)
+        return 0;
+    if (path->i >= path->num)    //If path completed
+        return 0;
+    return path->pts[path->i].s;
 }

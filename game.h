@@ -16,7 +16,7 @@
 #include "ui.h"
 #include "graph.h"
 #include "objects.h"
-#include "tanks.h"
+#include "cars.h"
 #include "list.h"
 #include "add_math.h"
 #include <QtCore>
@@ -27,7 +27,7 @@ extern QFile* path_log;
 extern QPixmap* picture;
 extern bool SHOW_COLLIDERS;
 
-class Tank;
+class Car;
 class EntityStack;
 
 enum uimode{
@@ -52,6 +52,7 @@ private:
     std::chrono::duration<double, std::milli> pathfind_time;
     static const int SPEED_GUI_SIZE = 240;
     double speeds[SPEED_GUI_SIZE];
+    double max_speeds[SPEED_GUI_SIZE];
 
     EntityStack *visible;
     int target_x;
@@ -63,7 +64,7 @@ private:
     obstacle* obst = nullptr;
     uint obst_num = 0;
 public:
-    Tank* player;  //Player tank
+    Car* player;  //Controlled car
     Box* box;
     game(int w, int h, QWidget *parent = 0);
     ~game();

@@ -1,7 +1,7 @@
 #include "game.h"
 
 //-------Global variables-------
-QPixmap* picture;   //Imgae buffer
+QPixmap* picture;   //Image buffer
 EntityStack* stack;
 QFile* path_log;
 bool SHOW_COLLIDERS;    //Show collision masks

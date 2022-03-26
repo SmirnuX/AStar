@@ -14,7 +14,10 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
 
     //Graphs intitializa
     for (int i = 0; i < SPEED_GUI_SIZE; i++)
+    {
         speeds[i] = 0;
+        max_speeds[i] = 0;
+    }
 
     stack = new EntityStack();  //Entity stack creation
     visible = new EntityStack();
@@ -23,7 +26,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     qDebug() << save.open(QFile::ReadOnly);
     loadSave(QJsonDocument().fromJson(save.readAll()));
 
-    player = new Tank(player_start_x, player_start_y);
+    player = new Car(player_start_x, player_start_y);
     stack->Add((Entity*) player);
 
     box = new Box(1000, 400);
@@ -174,11 +177,7 @@ bool game::event(QEvent* ev)   //Event handler
 
 void game::mousePressEvent(QMouseEvent *event)    //Mouse event handler
 {
-    if (event->button() == Qt::RightButton) {   //Rotating tank head
-        double mouse_angle = -direction_to_point(player->GetX(), player->GetY(), event->pos().x(), event->pos().y());
-        player->SetCannonAngle(Angle(mouse_angle) - player->GetAngle());
-    }
-    else if (event->button() == Qt::LeftButton && (UI_MODE == GRAPH || UI_MODE == PATH))
+    if (event->button() == Qt::LeftButton && (UI_MODE == GRAPH || UI_MODE == PATH))
     {
         target_x = event->pos().x();
         target_y = event->pos().y();
@@ -197,6 +196,8 @@ void game::paintEvent(QPaintEvent *) //Drawing buffer content
 
 void game::game_update()  //Function, called every frame
 {
+    player->ResetFlags();
+
     bool toBuild = false;
     bool follow = false;
     picture->fill();    //Clearing buffer
@@ -218,14 +219,12 @@ void game::game_update()  //Function, called every frame
     {
         player->RotateR();
     }
-    if(key[4])   //[SPACE] - Shoot
+    if(key[4])   //[SPACE] - nothing
     {
-        player->Shoot();
+
     }
     if (key[5]) //[CTRL] - building path
     {
-        //player->RideTo(box);
-        //player->FollowPath();
         toBuild = true;
     }
     if (key[6]) //[SHIFT] - following path
@@ -260,13 +259,9 @@ void game::game_update()  //Function, called every frame
         for (stack->Reset(); stack->current != NULL; stack->Next())
             stack->current->entity->collision_mask->ShowCollider();
 
-
-    QTime start = QTime::currentTime();
-    QTime graph_end;
-    QTime path_end;
     if (toBuild)
     {
-        //Path updating
+        //Old path
         if (path_graph != nullptr)
         {
             delete path_graph;
@@ -297,18 +292,15 @@ void game::game_update()  //Function, called every frame
         assert(i == visible->size+2);
 
         path_graph = build_graph(obst, obst_num);
-        graph_end = QTime::currentTime();
         auto chr_graph_end = std::chrono::high_resolution_clock::now();
         path_graph->AStar();
         player->graph_to_path(path_graph);
-        path_end = QTime::currentTime();
         auto chr_path_end = std::chrono::high_resolution_clock::now();
 
         build_time = chr_graph_end - chr_start;
         pathfind_time = chr_path_end - chr_graph_end;
         toBuild = false;
     }
-
 
     if (follow) //Path following
     {
@@ -322,8 +314,10 @@ void game::game_update()  //Function, called every frame
     for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
     {
         speeds[i] = speeds[i+1];
+        max_speeds[i] = max_speeds[i+1];
     }
     speeds[SPEED_GUI_SIZE-1] = player->GetSpeed();
+    max_speeds[SPEED_GUI_SIZE-1] = player->GetPathMaxSpeed();
 
     //Showing menu
     if (UI_ACTIVE)
@@ -345,8 +339,6 @@ void game::game_update()  //Function, called every frame
         pntr.setPen(QColor(0,0,0));
         pntr.drawText(10, 10, "F1 - HIDE, [F2 - COLLISION], F3 - GRAPH, F4 - PATH, F5 - EDITOR");
         pntr.drawText(10, 20, "Number of objects:\t " + QString::number(stack->size));
-        if (player->reload_timeout == 0)
-            pntr.drawText(10, 30, "Cannon ready");
     }
     else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
     {
@@ -399,12 +391,19 @@ void game::game_update()  //Function, called every frame
         int maxy = 40;
         int miny = 80;
         int stepx = 2;
-        int maxspeed = 4;
+        int maxspeed = 8;
         for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
         {
             pntr.drawLine(i*stepx, miny + speeds[i]/maxspeed*(maxy-miny),
                           (i+1)*stepx, miny + speeds[i+1]/maxspeed*(maxy-miny));
         }
+        pntr.setPen(QColor(200,0,0));
+        for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
+        {
+            pntr.drawLine(i*stepx, miny + max_speeds[i]/maxspeed*(maxy-miny),
+                          (i+1)*stepx, miny + max_speeds[i+1]/maxspeed*(maxy-miny));
+        }
+
         //Drawing angle and target angle
         int cent_x = 800;
         int cent_y = 40;
