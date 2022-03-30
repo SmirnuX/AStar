@@ -169,7 +169,8 @@ void Car::FollowPath() //Actually follow built path
             delta = fabs(anglediff(-angle, dir_to_obj.normalL()));
         else
             delta = fabs(anglediff(-angle, dir_to_obj.normalR()));
-        double DEG_EPS = 10 * rot_speed.GetR();
+        qDebug() << delta;
+        double DEG_EPS = Angle(30, DEGREES).GetR();
         if (delta < DEG_EPS)
         {
             if (speed <= temp_max_speed)
@@ -198,6 +199,7 @@ void Car::FollowPath() //Actually follow built path
                         next_pt->direction == COUNTERCLOCKWISE ? dir_to_obj_next.GetR() : dir_to_obj.GetR() ))
             {
                 path->i++;  //Go to next segment
+                RotateTo(next_pt->direction == COUNTERCLOCKWISE ? next_pt->e_a.normalL() : next_pt->e_a.normalR());
                 return;
             }
         }
