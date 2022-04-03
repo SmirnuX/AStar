@@ -253,11 +253,8 @@ void game::game_update()  //Function, called every frame
             stack->current = saved;
         }
         //Drawing every entity
-        stack->current->entity->Show();
+//        stack->current->entity->Show();
     }
-    if (SHOW_COLLIDERS) //Drawing colliders
-        for (stack->Reset(); stack->current != NULL; stack->Next())
-            stack->current->entity->collision_mask->ShowCollider();
 
     if (toBuild)
     {
@@ -309,6 +306,20 @@ void game::game_update()  //Function, called every frame
             player->FollowPath();
         }
     }
+
+    //Entities drawing
+    for (stack->Reset(); stack->current != NULL; stack->Next())
+    {
+        //Drawing every entity
+        stack->current->entity->Show();
+    }
+
+    for (stack->Reset(); stack->current != NULL; stack->Next())
+    {
+        if (SHOW_COLLIDERS)
+            stack->current->entity->collision_mask->ShowCollider();
+    }
+
 
     //Graph updating
     for (int i = 0; i < SPEED_GUI_SIZE-1; i++)

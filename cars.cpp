@@ -7,7 +7,7 @@ extern EntityStack* stack;
 BaseCar::BaseCar(double _x, double _y):MovingEntity(_x, _y, 0, 0, nullptr)
 {
     target_ui_angle = angle;
-    friction = 0.1;
+    friction = 0.2;
     directed_friction = true;
 
     //Flags and timers
@@ -26,7 +26,8 @@ void BaseCar::ResetFlags()
 void BaseCar::Show()   //Drawing
 {
     if (SHOW_COLLIDERS)
-        FOV_collider->ShowCollider();
+        for (int i = 0; i < ray_count; i++)
+            FOV_collider[i]->ShowCollider();
     ShowWheels();
     ShowBase();
     ShowLights();
@@ -167,18 +168,26 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
     collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
 
-    //FOV
-    FOV_collider = (Collider*) new LineCollider(x, y, x + FOV_distance, y);
+    ray_count = 9;
+
+    //Radar
+    FOV_collider = new LineCollider*[ray_count];
+    double one_ang = FOV_angle.GetR() / (ray_count-1);
+    for (int i = 0; i < ray_count; i++)
+    {
+        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
+        FOV_collider[i] = new LineCollider(x, y, x + FOV_distance * sin(ang.GetR()), y + FOV_distance * cos(ang.GetR()));
+    }
 
     //Size parameters
 
-    base_length = 100;
+    base_length = 120;
     base_width = 60;
-    wheels_x_delta = 25;
-    wheels_y_delta = 30;
+    wheels_x_delta = 50;
+    wheels_y_delta = 27;
     wheels_length = 15;
     wheels_width = 8;
-    lights_length = 4;
+    lights_length = 10;
     lights_width = 6;
 
     radius = distance(0,0,base_width/2,base_length/2);
@@ -195,8 +204,15 @@ Car::~Car()
 void Car::OnStep()
 {
     //FOV
-    ((Point*)FOV_collider)->MoveTo(x, y);
-    FOV_collider->SetAngle(-(angle));
+
+    double one_ang = FOV_angle.GetR() / (ray_count-1);
+    for (int i = 0; i < ray_count; i++)
+    {
+        ((Point*)FOV_collider[i])->MoveTo(x, y);
+        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
+        FOV_collider[i]->SetAngle(-(angle) + ang);
+    }
+
 
     EntityStackItem* saved = stack->current;
     //Checking for collision with ray
@@ -204,10 +220,12 @@ void Car::OnStep()
     {
         if (stack->current == saved)
             continue;
-        if (FOV_collider->CheckCollision(stack->current->entity->collision_mask))
+        for (int i = 0; i < ray_count; i++)
         {
-            FOV_collider->collisions++;
-            stack->current->entity->collision_mask->collisions++;
+            if (FOV_collider[i]->CheckCollision(stack->current->entity->collision_mask))
+            {
+                FOV_collider[i]->collisions++;
+            }
         }
     }
     stack->current = saved; //Returning to previous state of stack
@@ -251,6 +269,18 @@ void Car::ShowBase()
     pic_pntr.setBrush(Brush);
 
     DrawTurnedRect(&pic_pntr, x, y, angle, base_length, base_width);
+
+
+    QBrush WBrush(QColor(60, 60, 60));
+    pic_pntr.setPen(QColor(0, 0, 0));
+    pic_pntr.setBrush(WBrush);
+    DrawTurnedRect(&pic_pntr, x, y, angle, base_length/2, base_width * 0.8);
+
+    pic_pntr.setBrush(Brush);
+    DrawTurnedRect(&pic_pntr, x, y, angle, base_length*0.4, base_width * 0.8);
+
+    //Drawing windows
+
 }
 
 void Car::ShowLights()
@@ -262,7 +292,7 @@ void Car::ShowLights()
 
     double lights_y_delta = base_width/2 - lights_width/2;
     double lights_x_delta = base_length/2 - lights_length/2;
-    double rear_lights_y_delta = lights_y_delta - lights_length;
+    double rear_lights_y_delta = lights_y_delta - lights_length/2;
 
     //Front lights
     DrawTurnedRect(&pic_pntr,

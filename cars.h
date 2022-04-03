@@ -12,10 +12,12 @@ protected:
     //Properties
     double FOV_distance; //Radius of FOV
     Angle FOV_angle;    //Angle of FOV
-    Collider* FOV_collider;
+    LineCollider** FOV_collider;
     double acc;         //Acceleration
     double dec;         //Decceleration
     Angle rot_speed;    //Angular speed
+
+    int ray_count;      //Number of radars
 
     //Size properties
     double radius;

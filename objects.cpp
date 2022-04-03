@@ -223,7 +223,7 @@ void Entity::EntityUpdate()  //Function, that is called every tact. This functio
 {
     OnStep();
     AutoMove();
-    if (ToDelete)
+    if (ToDelete)   //Deleting object AFTER doing everything with it
     {
         stack->Delete(this);
     }
@@ -309,8 +309,8 @@ void MovingEntity::AutoMove()    //Movement, depending of current speed and angl
     double dir_friction = 0;
     if (directed_friction)
     {
-        double dir_fr = 0.1;
-        dir_friction =dir_fr * fabs(sin(Angle(angle.GetR() - speed_dir).GetR()));
+        double dir_fr = 0.2;
+        dir_friction = dir_fr * fabs(sin(Angle(angle.GetR() + speed_dir).GetR()));
         //Directional friction is zero when angle and speed direction directed in same direction
     }
     //Friction
