@@ -282,27 +282,29 @@ bool LineCollider::CheckCollision(ChainCollider* other)    //Collision with chai
 
 bool LineCollider::CheckCollision(CircleCollider* other)     //Collision with circle
 {
-    //Search for nearest point on line to circle
-    double normal_a, normal_b;
-    normal_a = - line->b;
-    normal_b = line->a;
-    //Finding C for equation of normal
-    double normal_c = -(normal_a * other->GetX() + normal_b * other->GetY());
-    //Finding intersection of normal and line
-    Point* nearest_pt = intersect2d(normal_a, normal_b, normal_c,
-                               line->a, line->b, line->c);
-    if (nearest_pt == nullptr)
-    {
-//        throw std::runtime_error("[ARC_LINE_COLLISION] Unexpected error. Somehow line and its normal do not intersect");
-        qDebug() << ("[LINECOLLIDER::CIRCLECOLLIDER] Unexpected error. Somehow line and its normal do not intersect");
-        return true;
-    }
-    if (!intersect(line->GetMinX(), line->GetMaxX(), nearest_pt->GetX(), nearest_pt->GetX()) ||
-        !intersect(line->GetMinY(), line->GetMaxY(), nearest_pt->GetY(), nearest_pt->GetY()) )
+    double dist = fabs(line->a * other->GetX() + line->b * other->GetY() + line->c) / sqrt(line->a*line->a + line->b*line->b);
+    if (dist > other->circle->GetR())
         return false;
-    double dist = distance2(nearest_pt->GetX(), nearest_pt->GetY(), other->GetX(), other->GetY());
-    delete nearest_pt;
-    return (dist < other->circle->GetR() * other->circle->GetR());
+
+    //Getting nearest point
+    double C = line->c + line->a * other->GetX() + line->b * other->GetY();
+    double a = line->a * line->a + line->b * line->b;
+    double b = 2 *line->b * C;
+    double c = C * C - line->a * line->a * other->circle->GetR() * other->circle->GetR();
+    double det = b*b - 4*a*c;
+    if (det < 0)
+        return false;
+    double y1 = (- b - sqrt(det)) / (2*a) + other->GetY();
+    double y2 = (- b + sqrt(det)) / (2*a) + other->GetY();
+    double x1 = - (line->c + line->b * y1) / line->a;
+    double x2 = - (line->c + line->b * y2) / line->a;
+    if (line->GetMinX() <= x1 && x1 <= line->GetMaxX() &&
+        min(line->GetMinY(), line->GetMaxY()) <= y1 && y1 <= max(line->GetMinY(), line->GetMaxY()))
+        return true;
+    if (line->GetMinX() <= x2 && x2 <= line->GetMaxX() &&
+        min(line->GetMinY(), line->GetMaxY()) <= y2 && y2 <= max(line->GetMinY(), line->GetMaxY()))
+        return true;
+    return false;
 }
 
 bool LineCollider::CheckCollision(PolygonCollider* other)            //Collision with polygon

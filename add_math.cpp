@@ -266,36 +266,32 @@ double distance(double ax, double ay, double bx, double by)  //Distance between 
 
 bool arc_line_collision(Circle crc, Line ln, double min_ang, double max_ang)       //Is there collision between arc on circle crc and line ln?
 {
-    double a1, a2;   //Points of intersection
-    assert(crc.GetR() > 0);
-    //Search for nearest point on line to circle
-    double normal_a, normal_b;
-    normal_a = - ln.b;
-    normal_b = ln.a;
-    //Finding C for equation of normal
-    double normal_c = -(normal_a * crc.GetX() + normal_b * crc.GetY());
-    //Finding intersection of normal and line
-    std::unique_ptr<Point> nearest_pt(intersect2d( normal_a, normal_b, normal_c,
-                                                    ln.a, ln.b, ln.c));
-    if (!nearest_pt)
-    {
-        qDebug() << "Circle: " << crc.GetX() <<", " << crc.GetY() << ", R: " << crc.GetR();
-        qDebug() << "Line: " << ln.GetMinX() <<", " << ln.GetMinY() <<"; " << ln.GetMaxX() <<", " << ln.GetMaxY();
-//        throw std::runtime_error("[ARC_LINE_COLLISION] Unexpected error. Somehow line and its normal do not intersect");
-        qDebug() << ("[ARC_LINE_COLLISION] Unexpected error. Somehow line and its normal do not intersect");
+    double dist = fabs(ln.a * crc.GetX() + ln.b * crc.GetY() + ln.c) / sqrt(ln.a*ln.a + ln.b*ln.b);
+    if (dist > crc.GetR())
+        return false;
+
+    //Getting nearest point
+    double C = ln.c + ln.a * crc.GetX() + ln.b * crc.GetY();
+    double a = ln.a * ln.a + ln.b * ln.b;
+    double b = 2 *ln.b * C;
+    double c = C * C - ln.a * ln.a * crc.GetR() * crc.GetR();
+    double det = b*b - 4*a*c;
+    if (det < 0)
+        return false;
+    double y1 = (- b - sqrt(det)) / (2*a) + crc.GetY();
+    double y2 = (- b + sqrt(det)) / (2*a) + crc.GetY();
+    double x1 = - (ln.c + ln.b * y1) / ln.a;
+    double x2 = - (ln.c + ln.b * y2) / ln.a;
+    if (ln.GetMinX() <= x1 && x1 <= ln.GetMaxX() &&
+        min(ln.GetMinY(), ln.GetMaxY()) <= y1 && y1 <= max(ln.GetMinY(), ln.GetMaxY()))
         return true;
-    }
-    if (!intersect(ln.GetMinX(), ln.GetMaxX(), nearest_pt->GetX(), nearest_pt->GetX()) ||
-        !intersect(ln.GetMinY(), ln.GetMaxY(), nearest_pt->GetY(), nearest_pt->GetY()) )
-        return false;
-    double dist = distance2(nearest_pt->GetX(), nearest_pt->GetY(), crc.GetX(), crc.GetY());
-    if (dist > crc.GetR() * crc.GetR())   //If there is no intersection
-        return false;
+    if (ln.GetMinX() <= x2 && x2 <= ln.GetMaxX() &&
+        min(ln.GetMinY(), ln.GetMaxY()) <= y2 && y2 <= max(ln.GetMinY(), ln.GetMaxY()))
+        return true;
+    return false;
     //Find angle
-    double line_angle = direction_to_point(crc.GetX(), crc.GetY(), nearest_pt->GetX(), nearest_pt->GetY());
-    double angle = safe_acos(sqrt(dist)/crc.GetR());
-    a1 = Angle(line_angle + angle).GetR();
-    a2 = Angle(line_angle - angle).GetR();
+    double a1 = direction_to_point(crc.GetX(), crc.GetY(), x1, y1);
+    double a2 = direction_to_point(crc.GetX(), crc.GetY(), x1, y1);
     return angle_between(min_ang, a1, max_ang) || angle_between(min_ang, a2, max_ang);
 }
 
