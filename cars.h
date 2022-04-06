@@ -13,6 +13,7 @@ protected:
     double FOV_distance; //Radius of FOV
     Angle FOV_angle;    //Angle of FOV
     LineCollider** FOV_collider;
+    RadarPoint* FOV_points;
     double acc;         //Acceleration
     double dec;         //Decceleration
     Angle rot_speed;    //Angular speed

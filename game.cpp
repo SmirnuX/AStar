@@ -237,8 +237,11 @@ void game::game_update()  //Function, called every frame
     for (stack->Reset(); stack->current != NULL; stack->Next()) //Updating of every entity
     {
         stack->current->entity->EntityUpdate();
+    }
         //Collision check
-        if (SHOW_COLLIDERS)
+    if (SHOW_COLLIDERS)
+    {
+        for (stack->Reset(); stack->current != NULL; stack->Next())
         {
             EntityStackItem* saved = stack->current;
             stack->Next();

@@ -171,8 +171,8 @@ void PointCollider::ShowCollider(QPainter* pntr)  //Drawing collider
     if (painter == nullptr)
     {
         painter = new QPainter(picture);
-        if (collisions > 0)
-            painter->setPen(QColor(0,255,0));
+        if (collisions == 0)
+            painter->setPen(QColor(0,150,0));
         else
             painter->setPen(QColor(255,0,0));
         collisions = 0;
@@ -183,6 +183,13 @@ void PointCollider::ShowCollider(QPainter* pntr)  //Drawing collider
     {
         delete painter;
     }
+}
+
+RadarPoint PointCollider::Raycast(Point* start, Angle angle, double length)
+{
+    RadarPoint res; //Pointless
+    res.distance = -1;
+    return res;
 }
 
 obstacle PointCollider::GetOutline(double threshold)  //Get graph to ride around this object
@@ -335,8 +342,8 @@ void LineCollider::ShowCollider(QPainter* pntr)
     if (painter == nullptr)
     {
         painter = new QPainter(picture);
-        if (collisions > 0)
-            painter->setPen(QColor(0,255,0));
+        if (collisions == 0)
+            painter->setPen(QColor(0,150,0));
         else
             painter->setPen(QColor(255,0,0));
         collisions = 0;
@@ -347,6 +354,53 @@ void LineCollider::ShowCollider(QPainter* pntr)
     {
         delete painter;
     }
+}
+
+RadarPoint LineCollider::Raycast(Point* start, Angle angle, double length)
+{
+    RadarPoint res; //No solution
+    res.distance = -1;
+
+    //Solution of system of linear equations : X = A^(-1)xB
+    Matrix A(2, 2);
+    A.SetElem(line->a, 0, 0);
+    A.SetElem(line->b, 0, 1);
+    Line ray(*start, Point(start->GetX() + length * cos(angle.GetR()),
+                           start->GetY() + length * sin(angle.GetR())));
+    A.SetElem(ray.a, 1, 0);
+    A.SetElem(ray.b, 1, 1);
+
+    //Checking determinant
+    double _Det = A.det();
+    if (almostEq(_Det, 0))
+    {
+        if (intersect(line->GetMinX(), line->GetMaxX(),
+                      ray.GetMinX(), ray.GetMaxX()) && almostEq(line->c, ray.c))
+        {   //Parallel or equal
+            return res; //Equal - there should be something
+        }
+        else
+            return res;
+    }
+    //Get two other determinants
+    A.SetElem(-line->c, 0, 0);
+    A.SetElem(-ray.c, 1, 0);
+
+    double _det1 = A.det();
+    A.SetElem(line->a, 0, 0);
+    A.SetElem(ray.a, 1, 0);
+    A.SetElem(-line->c, 0, 1);
+    A.SetElem(-ray.c, 1, 1);
+
+    double _det2 = A.det();
+    double res_x = _det1 / _Det;
+    double res_y = _det2 / _Det;
+
+    res.pt = Point(res_x, res_y);
+    res.distance = distance(start->GetX(), start->GetY(), res_x, res_y);
+    if (res.distance > length)
+        res.distance = -1;
+    return res;
 }
 
 void LineCollider::MoveTo(double _x, double _y)   //Move first point to (_x, _y) - second point will follow
@@ -562,8 +616,8 @@ void ChainCollider::ShowCollider(QPainter *pntr)
     if (painter == nullptr)
     {
         painter = new QPainter(picture);
-        if (collisions > 0)
-            painter->setPen(QColor(0,255,0));
+        if (collisions == 0)
+            painter->setPen(QColor(0,150,0));
         else
             painter->setPen(QColor(255,0,0));
         collisions = 0;
@@ -578,6 +632,27 @@ void ChainCollider::ShowCollider(QPainter *pntr)
         delete painter;
     }
 }
+
+RadarPoint ChainCollider::Raycast(Point* start, Angle angle, double length)
+{
+    RadarPoint res; //No solution
+    res.distance = -1;
+    for (int i = 0; i < count-1; i++)
+    {
+        LineCollider lc = LineCollider(lines[i]->GetMinX(), lines[i]->GetMinY(),
+                                       lines[i]->GetMaxX(), lines[i]->GetMaxY());
+        RadarPoint curr = lc.Raycast(start, angle, length);
+        if (curr.distance < res.distance || curr.distance > res.distance && res.distance == -1)
+        {
+            res = curr;
+        }
+    }
+    if (res.distance > length)
+        res.distance = -1;
+
+    return res;
+}
+
 
 void ChainCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y
 {
@@ -862,8 +937,8 @@ void CircleCollider::ShowCollider(QPainter* pntr)
     if (painter == nullptr)
     {
         painter = new QPainter(picture);
-        if (collisions > 0)
-            painter->setPen(QColor(0,255,0));
+        if (collisions == 0)
+            painter->setPen(QColor(0,150,0));
         else
             painter->setPen(QColor(255,0,0));
         collisions = 0;
@@ -874,6 +949,43 @@ void CircleCollider::ShowCollider(QPainter* pntr)
     {
         delete painter;
     }
+}
+
+
+RadarPoint CircleCollider::Raycast(Point* start, Angle angle, double length)
+{
+    Line ray(*start, Point(start->GetX() + length * cos(angle.GetR()),
+                           start->GetY() + length * sin(angle.GetR())));
+    RadarPoint res;
+    res.distance = -1;
+    double dist = fabs(ray.a * GetX() + ray.b * GetY() + ray.c) / sqrt(ray.a*ray.a + ray.b*ray.b);
+    if (dist > circle->GetR())
+        return res;
+
+    //Getting nearest point
+    double C = ray.c + ray.a * GetX() + ray.b * GetY();
+    double a = ray.a * ray.a + ray.b * ray.b;
+    double b = 2 * ray.b * C;
+    double c = C * C - ray.a * ray.a * circle->GetR() * circle->GetR();
+    double det = b*b - 4*a*c;
+    if (det < 0)
+        return res;
+    double y1 = (- b - sqrt(det)) / (2*a) + GetY();
+    double y2 = (- b + sqrt(det)) / (2*a) + GetY();
+    double x1 = - (ray.c + ray.b * y1) / ray.a;
+    double x2 = - (ray.c + ray.b * y2) / ray.a;
+
+    res.distance = distance(start->GetX(), start->GetY(), x1, y1);
+    if (distance(start->GetX(), start->GetY(), x2, y2) > res.distance && distance(start->GetX(), start->GetY(), x2, y2) <= length)
+    {
+        res.pt = Point(x2, y2);
+        res.distance = distance(start->GetX(), start->GetY(), x2, y2);
+    }
+    else
+        res.pt = Point(x1, y1);
+    if (res.distance > length)
+        res.distance = -1;
+    return res;
 }
 
 void CircleCollider::MoveTo(double _x, double _y)
@@ -1023,8 +1135,8 @@ void PolygonCollider::ShowCollider(QPainter *pntr)
     if (painter == nullptr)
     {
         painter = new QPainter(picture);
-        if (collisions > 0)
-            painter->setPen(QColor(0,255,0));
+        if (collisions == 0)
+            painter->setPen(QColor(0,150,0));
         else
             painter->setPen(QColor(255,0,0));
         collisions = 0;
@@ -1044,6 +1156,36 @@ void PolygonCollider::ShowCollider(QPainter *pntr)
     {
         delete painter;
     }
+}
+
+RadarPoint PolygonCollider::Raycast(Point* start, Angle angle, double length)
+{
+    RadarPoint res; //No solution
+    res.distance = -1;
+
+    Point* curr;    //First point of segment
+    Point* next;    //Second point of segment
+    LineCollider line_c(0,0,1,1);
+
+    for(int i=0; i < count; i++)   //Checking every intersection
+    {
+        curr = points[i];
+        if (i < count-1)
+            next = points[i+1];
+        else
+            next = points[0];
+        line_c.line->Set(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
+
+        RadarPoint curr_rp = line_c.Raycast(start, angle, length);
+        if (curr_rp.distance < res.distance || curr_rp.distance > res.distance && res.distance == -1)
+        {
+            res = curr_rp;
+        }
+    }
+    if (res.distance > length)
+        res.distance = -1;
+
+    return res;
 }
 
 void PolygonCollider::MoveTo(double _x, double _y)  //Move origin to _x, _y

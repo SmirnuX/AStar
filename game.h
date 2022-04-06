@@ -35,7 +35,8 @@ enum uimode{
     COLLIDERS,  //Show collision masks
     GRAPH,      //Show path graph
     PATH,       //Show built path
-    OBJECTS     //Move objects
+    OBJECTS,    //Move objects
+    RADAR       //Radar data
 };
 
 class game : public QMainWindow //Main window

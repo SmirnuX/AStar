@@ -163,22 +163,6 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     max_speed = 8;
     friction = 0.1;
 
-    //Collider
-    double x_s[4] = {x + base_length/2, x + base_length/2, x - base_length/2, x - base_length/2};
-    double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
-    collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
-
-    ray_count = 9;
-
-    //Radar
-    FOV_collider = new LineCollider*[ray_count];
-    double one_ang = FOV_angle.GetR() / (ray_count-1);
-    for (int i = 0; i < ray_count; i++)
-    {
-        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
-        FOV_collider[i] = new LineCollider(x, y, x + FOV_distance * sin(ang.GetR()), y + FOV_distance * cos(ang.GetR()));
-    }
-
     //Size parameters
 
     base_length = 120;
@@ -189,6 +173,26 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     wheels_width = 8;
     lights_length = 10;
     lights_width = 6;
+
+    //Collider
+    double x_s[4] = {x + base_length/2, x + base_length/2, x - base_length/2, x - base_length/2};
+    double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
+    collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
+
+    ray_count = 9;
+
+    //Radar
+    FOV_collider = new LineCollider*[ray_count];
+    double one_ang = FOV_angle.GetR() / (ray_count-1);
+    FOV_points = new RadarPoint[ray_count];
+    for (int i = 0; i < ray_count; i++)
+    {
+        FOV_points[i] = RadarPoint;
+        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
+        FOV_collider[i] = new LineCollider(x, y, x + FOV_distance * sin(ang.GetR()), y + FOV_distance * cos(ang.GetR()));
+    }
+
+
 
     radius = distance(0,0,base_width/2,base_length/2);
 }
@@ -216,15 +220,20 @@ void Car::OnStep()
 
     EntityStackItem* saved = stack->current;
     //Checking for collision with ray
+    for (int i = 0; i < ray_count; i++)
+        FOV_radar[i].distance = -1;
+
     for (stack->Reset(); stack->current != NULL; stack->Next())
     {
         if (stack->current == saved)
             continue;
         for (int i = 0; i < ray_count; i++)
         {
-            if (FOV_collider[i]->CheckCollision(stack->current->entity->collision_mask))
+            RadarPoint curr = stack->current->entity->collision_mask->
+                    RayCast(Point(x,y), -FOV_angle.GetR() / 2 + one_ang * i, FOV_distance);
+            if ()
             {
-                FOV_collider[i]->collisions++;
+
             }
         }
     }

@@ -7,6 +7,12 @@
 
 extern QPixmap* picture;
 
+struct RadarPoint
+{
+    double distance = -1;    //<0 if there is no collision
+    Point pt = Point(0,0);
+};
+
 class PointCollider;
 class LineCollider;
 class ChainCollider;
@@ -27,12 +33,15 @@ public:
 
     virtual void updateBB() = 0;    //Update bounding box
     virtual bool CheckCollision(Collider* other) = 0;           //Collision with unknown object
+
     virtual bool CheckCollision(PointCollider* other) = 0;      //Collision with point
     virtual bool CheckCollision(LineCollider* other) = 0;       //Collision with line
     virtual bool CheckCollision(ChainCollider* other) = 0;      //Collision with chain
     virtual bool CheckCollision(CircleCollider* other) = 0;     //Collision with circle
     virtual bool CheckCollision(PolygonCollider* other) = 0;    //Collision with polygon
     virtual void ShowCollider(QPainter *pntr = nullptr) = 0;    //Drawing collision mask
+
+    virtual RadarPoint Raycast(Point* start, Angle angle, double length) = 0;   //Get nearest point of ray, casted from start in angle direction
 
     virtual void SetAngle(Angle _angle);
 
@@ -56,6 +65,8 @@ public:
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);    //Drawing collision mask
 
+    RadarPoint Raycast(Point* start, Angle angle, double length);
+
     obstacle GetOutline(double threshold);  //Get graph to ride round this object
 };
 
@@ -76,6 +87,8 @@ public:
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);
+
+    RadarPoint Raycast(Point* start, Angle angle, double length);
 
     void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
     void Drag(double dx, double dy);
@@ -108,6 +121,8 @@ public:
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);
 
+    RadarPoint Raycast(Point* start, Angle angle, double length);
+
     void MoveTo(double _x, double _y);    //Move origin point to (_x, _y) - points will follow
     void Drag(double dx, double dy);
     void Turn(Angle angle, Point& pivot);
@@ -135,6 +150,8 @@ public:
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);
 
+    RadarPoint Raycast(Point* start, Angle angle, double length);
+
     void MoveTo(double _x, double _y);
     void Drag(double dx, double dy);
     void Turn(Angle angle, Point& pivot);
@@ -161,6 +178,8 @@ public:
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);
+
+    RadarPoint Raycast(Point* start, Angle angle, double length);
 
     void MoveTo(double _x, double _y);  //Move origin to _x, _y
     void Drag(double dx, double dy);
