@@ -7,11 +7,13 @@ constexpr double EPSILON = 0.001;
 
 class Collider;
 class Point;
+class Angle;
 
 //Trigonometry
 
 double degtorad(double angle);  //Convert degrees to radians
 double radtodeg(double angle);  //Convert radians to degrees
+double collinear(Angle a, Angle b);  //Return 1 if they are looking in smae direction, and -1 if opposite
 
 enum AngleMeasure
 {

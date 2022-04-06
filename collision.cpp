@@ -396,8 +396,16 @@ RadarPoint LineCollider::Raycast(Point* start, Angle angle, double length)
     double res_x = _det1 / _Det;
     double res_y = _det2 / _Det;
 
-    res.pt = Point(res_x, res_y);
-    res.distance = distance(start->GetX(), start->GetY(), res_x, res_y);
+    double this_min_y = (line->GetMinY() < line->GetMaxY()) ? line->GetMinY() : line->GetMaxY();
+    double this_max_y = (line->GetMinY() > line->GetMaxY()) ? line->GetMinY() : line->GetMaxY();
+
+    bool is_in_this_x = (line->GetMinX() < res_x && res_x < line->GetMaxX()) || almostEq(line->GetMinX(), res_x);
+    bool is_in_this_y = (this_min_y < res_y && res_y < this_max_y) || almostEq(line->GetMinY(), res_y);
+
+    if (is_in_this_x && is_in_this_y)
+        res.distance = distance(start->GetX(), start->GetY(), res_x, res_y) *
+                collinear(angle, Angle(direction_to_point(start->GetX(), start->GetY(), res_x, res_y)));;
+    res.pt = Point(res_x, res_y);   
     if (res.distance > length)
         res.distance = -1;
     return res;
@@ -975,8 +983,14 @@ RadarPoint CircleCollider::Raycast(Point* start, Angle angle, double length)
     double x1 = - (ray.c + ray.b * y1) / ray.a;
     double x2 = - (ray.c + ray.b * y2) / ray.a;
 
-    res.distance = distance(start->GetX(), start->GetY(), x1, y1);
-    if (distance(start->GetX(), start->GetY(), x2, y2) > res.distance && distance(start->GetX(), start->GetY(), x2, y2) <= length)
+    res.distance = distance(start->GetX(), start->GetY(), x1, y1) *
+            collinear(angle, Angle(direction_to_point(start->GetX(), start->GetY(),
+                                                        x1, y1)));
+
+    double sec_dist = distance(start->GetX(), start->GetY(), x2, y2) *
+            collinear(angle, Angle(direction_to_point(start->GetX(), start->GetY(),
+                                                        x2, y2)));
+    if (sec_dist < res.distance && sec_dist > 0)
     {
         res.pt = Point(x2, y2);
         res.distance = distance(start->GetX(), start->GetY(), x2, y2);
@@ -1177,7 +1191,8 @@ RadarPoint PolygonCollider::Raycast(Point* start, Angle angle, double length)
         line_c.line->Set(curr->GetX(), curr->GetY(), next->GetX(), next->GetY());
 
         RadarPoint curr_rp = line_c.Raycast(start, angle, length);
-        if (curr_rp.distance < res.distance || curr_rp.distance > res.distance && res.distance == -1)
+        if ((curr_rp.distance < res.distance && curr_rp.distance > 0) ||
+                (curr_rp.distance > res.distance && res.distance == -1))
         {
             res = curr_rp;
         }

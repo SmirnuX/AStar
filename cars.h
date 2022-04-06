@@ -42,6 +42,7 @@ public:
 
     BaseCar(double _x, double _y);
     void Show();    //Drawing
+    virtual void ShowRadar() = 0;
     virtual void ShowWheels() = 0;  //Drawing wheels
     virtual void ShowBase() = 0;    //Drawing base
     virtual void ShowLights() = 0;  //Drawing lights
@@ -77,6 +78,7 @@ public:
 
     void OnStep();
 
+    void ShowRadar();
     void ShowWheels();
     void ShowBase();
     void ShowLights();

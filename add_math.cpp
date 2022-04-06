@@ -14,6 +14,11 @@ double radtodeg(double angle)  //Convert radians to degrees
     return angle * 180 / M_PI;
 }
 
+double collinear(Angle a, Angle b)  //Return 1 if they are collinear and -1 if opposite
+{
+    return cos(anglediff(a, b)) > 0 ? 1 : -1;
+}
+
 
 //=== Angle class realization ===
 Angle::Angle()  //Uninitialized angle

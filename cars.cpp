@@ -25,9 +25,7 @@ void BaseCar::ResetFlags()
 
 void BaseCar::Show()   //Drawing
 {
-    if (SHOW_COLLIDERS)
-        for (int i = 0; i < ray_count; i++)
-            FOV_collider[i]->ShowCollider();
+    ShowRadar();
     ShowWheels();
     ShowBase();
     ShowLights();
@@ -187,7 +185,7 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     FOV_points = new RadarPoint[ray_count];
     for (int i = 0; i < ray_count; i++)
     {
-        FOV_points[i] = RadarPoint;
+        FOV_points[i] = RadarPoint();
         Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
         FOV_collider[i] = new LineCollider(x, y, x + FOV_distance * sin(ang.GetR()), y + FOV_distance * cos(ang.GetR()));
     }
@@ -221,23 +219,64 @@ void Car::OnStep()
     EntityStackItem* saved = stack->current;
     //Checking for collision with ray
     for (int i = 0; i < ray_count; i++)
-        FOV_radar[i].distance = -1;
+        FOV_points[i].distance = -1;
 
     for (stack->Reset(); stack->current != NULL; stack->Next())
     {
-        if (stack->current == saved)
+        if (stack->current->entity == this)
             continue;
         for (int i = 0; i < ray_count; i++)
         {
-            RadarPoint curr = stack->current->entity->collision_mask->
-                    RayCast(Point(x,y), -FOV_angle.GetR() / 2 + one_ang * i, FOV_distance);
-            if ()
-            {
+            RadarPoint curr = stack->current->entity->collision_mask->Raycast((Point*) this, Angle(-FOV_angle.GetR() / 2 + one_ang * i) - angle, FOV_distance);
 
+            if ((curr.distance < FOV_points[i].distance && curr.distance >= 0) || (curr.distance > FOV_points[i].distance && FOV_points[i].distance < 0))
+            {
+                FOV_points[i] = curr;
             }
         }
     }
     stack->current = saved; //Returning to previous state of stack
+}
+
+void Car::ShowRadar()
+{
+    QPainter pic_pntr(picture);
+    double one_ang = FOV_angle.GetR() / (ray_count-1);
+    for (int i = 0; i < ray_count; i++)
+    {
+        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i - angle;
+        if (FOV_points[i].distance != -1)
+        {
+            pic_pntr.setPen(QColor(255,0,0));
+            pic_pntr.drawLine(x, y, x + FOV_points[i].distance * cos(ang.GetR()), y + FOV_points[i].distance * sin(ang.GetR()));
+            pic_pntr.drawEllipse(x + FOV_points[i].distance * cos(ang.GetR()) - 2,
+                                 y + FOV_points[i].distance * sin(ang.GetR()) - 2, 4, 4);
+        }
+        else    //No collision
+        {
+            pic_pntr.setPen(QColor(140,140,140,40));
+            pic_pntr.drawLine(x, y, x + FOV_distance * cos(ang.GetR()), y + FOV_distance * sin(ang.GetR()));
+        }
+    }
+
+    QPen pen(QColor(255,0,255));
+    pen.setWidth(3);
+
+    pic_pntr.setPen(pen);
+
+    for (int i = 1; i < ray_count; i++)
+    {
+        Angle ang_pr = -FOV_angle.GetR() / 2 + one_ang * i - one_ang - angle;
+        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i - angle;
+        if (FOV_points[i].distance != -1 && FOV_points[i-1].distance != -1)
+        {
+
+            pic_pntr.drawLine(x + FOV_points[i-1].distance * cos(ang_pr.GetR()), y + FOV_points[i-1].distance * sin(ang_pr.GetR()),
+                              x + FOV_points[i].distance * cos(ang.GetR()), y + FOV_points[i].distance * sin(ang.GetR()));
+            pic_pntr.drawEllipse(x + FOV_points[i].distance * cos(ang.GetR()) - 2,
+                                 y + FOV_points[i].distance * sin(ang.GetR()) - 2, 4, 4);
+        }
+    }
 }
 
 void Car::ShowWheels()
