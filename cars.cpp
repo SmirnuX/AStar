@@ -149,6 +149,8 @@ void BaseCar::RotateR(const Angle& delta_angle)
 //=== Car class realization ===
 Car::Car(double _x, double _y):BaseCar(_x,_y)
 {
+    map = ObstacleMap();
+    map_timer = 0;
     path = nullptr;
     //FOV settings
     FOV_distance = 400;
@@ -177,7 +179,7 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
     collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
 
-    ray_count = 9;
+    ray_count = 3;
 
     //Radar
     FOV_collider = new LineCollider*[ray_count];
@@ -236,6 +238,31 @@ void Car::OnStep()
         }
     }
     stack->current = saved; //Returning to previous state of stack
+
+    map_timer ++;
+    if (map_timer >= 5)
+        map_timer = 0;
+    else
+        return;
+
+    for (int i = 1; i < ray_count; i++)
+    {
+        Angle ang_pr = -FOV_angle.GetR() / 2 + one_ang * (i-1);
+        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
+        if (FOV_points[i].distance > 0 && FOV_points[i-1].distance > 0)
+        {
+            Point pt1 = Point(  x + FOV_points[i-1].distance * cos((-(angle) + ang_pr).GetR()),
+                                y + FOV_points[i-1].distance * sin((-(angle) + ang_pr).GetR()));
+            Point pt2 = Point(  x + FOV_points[i].distance * cos((-(angle) + ang).GetR()),
+                                y + FOV_points[i].distance * sin((-(angle) + ang).GetR()));
+            map.AddLine(pt1, pt2, 60);
+        }
+
+//            map.AddPoint(Point(x + FOV_points[i].distance * cos((-(angle) + ang).GetR()),
+//                               y + FOV_points[i].distance * sin((-(angle) + ang).GetR())), 60);
+    }
+
+
 }
 
 void Car::ShowRadar()

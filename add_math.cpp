@@ -269,6 +269,7 @@ double distance(double ax, double ay, double bx, double by)  //Distance between 
     return sqrt(distance2(ax, ay, bx, by));
 }
 
+
 bool arc_line_collision(Circle crc, Line ln, double min_ang, double max_ang)       //Is there collision between arc on circle crc and line ln?
 {
     double dist = fabs(ln.a * crc.GetX() + ln.b * crc.GetY() + ln.c) / sqrt(ln.a*ln.a + ln.b*ln.b);

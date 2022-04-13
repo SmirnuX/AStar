@@ -3,7 +3,7 @@ AStar:
  - Provide several versions: greedy and not. Compare times
 
 Collisions:
- - Rewrite collision of circle and line (and of arc and line)
+ + Rewrite collision of circle and line (and of arc and line)
 
 Physics:
  - Rewrite rear gear
@@ -25,7 +25,7 @@ Path:
  + Check speed controlling algorithm
 
 Obstacle finding:
- - Write obstacle finding algorithm
+ ~ Write obstacle finding algorithm
 
 Controls:
  - Rewrite controls

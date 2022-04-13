@@ -166,7 +166,8 @@ public:
     Point** orig_points;
     int count;
 
-    PolygonCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y);
+    PolygonCollider(double* x_s, double* y_s, int num, double orig_x = 0, double orig_y = 0);
+    PolygonCollider(std::vector<Point> pts, double orig_x = 0, double orig_y = 0);
     ~PolygonCollider();
 
     void updateBB();    //Update bounding box

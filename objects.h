@@ -31,8 +31,8 @@ public:
     virtual void Turn(Angle angle, Point& pivot);
     virtual void Turn(Angle angle); //Doesn't make sense for point, but in derived classes
 
-    double GetX();
-    double GetY();
+    double GetX() const;
+    double GetY() const;
 };
 
 double distance2(Point a, Point b);
@@ -59,6 +59,7 @@ public:
     double GetMaxX() const;
     double GetMinY() const;
     double GetMaxY() const;
+    double DistTo(const Point& pt);
     operator=(const Line& other);
 };
 

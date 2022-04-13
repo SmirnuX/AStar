@@ -76,6 +76,9 @@ public:
 
     Path* path;
 
+    ObstacleMap map;
+    int map_timer;
+
     void OnStep();
 
     void ShowRadar();

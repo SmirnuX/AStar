@@ -12,7 +12,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     target_x = 0;
     target_y = 0;
 
-    //Graphs intitializa
+    //Graphs intitialize
     for (int i = 0; i < SPEED_GUI_SIZE; i++)
     {
         speeds[i] = 0;
@@ -134,6 +134,9 @@ bool game::event(QEvent* ev)   //Event handler
             break;
         case Qt::Key_F5:
             UI_MODE = OBJECTS;
+            break;
+        case Qt::Key_F6:
+            UI_MODE = RADAR;
             break;
         }
         return true;
@@ -277,19 +280,26 @@ void game::game_update()  //Function, called every frame
             obst = nullptr;
             obst_num = 0;
         }
-        obst = new obstacle [visible->size+2];   //Two is for start and end points.
-        obst_num = visible->size+2;
+//        obst = new obstacle [visible->size+2];   //Two is for start and end points.
+//        obst_num = visible->size+2;
+        obst = new obstacle [player->map.Size()+2];   //Two is for start and end points.
+        obst_num = player->map.Size()+2;
         obst[0].shape = POINT;
         obst[0].point = new Point(player->GetX(), player->GetY());
         obst[1].shape = POINT;
         obst[1].point = new Point(target_x, target_y);
         int i = 2;
-        for (visible->Reset(); visible->current!=NULL; visible->Next())
+//        for (visible->Reset(); visible->current!=NULL; visible->Next())
+//        {
+//            obst[i] = visible->current->entity->collision_mask->GetOutline(50);
+//            i++;
+//        }
+        for (; i < obst_num;)
         {
-            obst[i] = visible->current->entity->collision_mask->GetOutline(50);
+            obst[i] = player->map.GetObstacle(i-2, 50);
             i++;
         }
-        assert(i == visible->size+2);
+//        assert(i == visible->size+2);
 
         path_graph = build_graph(obst, obst_num);
         auto chr_graph_end = std::chrono::high_resolution_clock::now();
@@ -332,6 +342,19 @@ void game::game_update()  //Function, called every frame
     }
     speeds[SPEED_GUI_SIZE-1] = player->GetSpeed();
     max_speeds[SPEED_GUI_SIZE-1] = player->GetPathMaxSpeed();
+
+    player->map.Show();
+    if (UI_MODE == RADAR)
+    {
+        picture->fill();
+        player->Show();
+        player->map.Show();
+        QPainter pntr(picture);
+        pntr.setPen(QColor(0,0,0));
+        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, F3 - GRAPH, F4 - PATH, F5 - EDITOR, [F6 - VISION]");
+        pntr.drawText(10, 20, "Number of real objects:\t " + QString::number(stack->size));
+        pntr.drawText(10, 30, "Number of found objects:\t " + QString::number(player->map.obstacles.size()));
+    }
 
     //Showing menu
     if (UI_ACTIVE)

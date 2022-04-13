@@ -718,7 +718,7 @@ void ChainCollider::SetAngle(Angle angle)
     updateBB();
 }
 
-obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride round this object
+obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride around this object
 {
     obstacle res;
     res.shape = POLYGON;
@@ -1033,7 +1033,7 @@ obstacle CircleCollider::GetOutline(double threshold)  //Get graph to ride round
 
 
 //=== PolygonCollider class realization ===
-PolygonCollider::PolygonCollider(double* x_s, double* y_s, int num, double orig_x = 0, double orig_y = 0) : Collider(orig_x, orig_y)
+PolygonCollider::PolygonCollider(double* x_s, double* y_s, int num, double orig_x, double orig_y) : Collider(orig_x, orig_y)
 {
     points = new Point*[num];
     orig_points = new Point*[num];
@@ -1043,6 +1043,19 @@ PolygonCollider::PolygonCollider(double* x_s, double* y_s, int num, double orig_
         orig_points[i] = new Point(x_s[i] - x, y_s[i] - y);
     }
     count = num;
+    PolygonCollider::updateBB();
+}
+
+PolygonCollider::PolygonCollider(std::vector<Point> pts, double orig_x, double orig_y) : Collider(orig_x, orig_y)
+{
+    points = new Point*[pts.size()];
+    orig_points = new Point*[pts.size()];
+    for(int i=0; i<pts.size(); i++)
+    {
+        points[i] = new Point(pts[i].GetX(), pts[i].GetY());
+        orig_points[i] = new Point(pts[i].GetX() - x, pts[i].GetY() - y);
+    }
+    count = pts.size();
     PolygonCollider::updateBB();
 }
 

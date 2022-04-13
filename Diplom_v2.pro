@@ -17,7 +17,8 @@ SOURCES += \
     list.cpp \
     main.cpp \
     objects.cpp \
-    path.cpp
+    path.cpp \
+    vision.cpp
 
 HEADERS += \
     add_math.h \

@@ -21,13 +21,34 @@ enum DIRECTION {NODIRECTION,
 
 struct edge;
 
-struct obstacle //[TODO] Replace with classes
+struct obstacle //[TODO] Replace with classes - obstacle with outline around it
 {
     OBJ_SHAPE shape;
     Point* point;   //Center coords [POINT, CIRCLE]
     unsigned int num;   //Number of edges [POLYGON]
     edge* outline;  //Array of linear and circular edges [POLYGON]
     double r;       //Radius [CIRCLE]
+};
+
+class ObstacleMap  //Map of obstacles, found by distance sensors
+{
+public:
+    std::vector< std::vector<Point> > obstacles;
+
+    ObstacleMap();
+    ~ObstacleMap();
+
+    void AddPoint(const Point &pt, int d);
+    void DeletePoint(Point& pt);
+
+    void AddLine(const Point& pt1, const Point& pt2, double d);
+
+    int Size();
+
+    obstacle GetObstacle(int i, double r);
+
+
+    void Show();
 };
 
 struct vertex

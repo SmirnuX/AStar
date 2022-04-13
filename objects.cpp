@@ -55,12 +55,12 @@ bool Point::operator!= (const Point &b) const
 }
 
 //Getters
-double Point::GetX()
+double Point::GetX() const
 {
     return x;
 }
 
-double Point::GetY()
+double Point::GetY() const
 {
     return y;
 }
@@ -181,6 +181,12 @@ double Line::GetMinY() const
 double Line::GetMaxY() const
 {
     return max_p->GetY();
+}
+
+double Line::DistTo(const Point& pt)
+{
+    assert(a != 0 || b != 0);
+    return fabs(a*pt.GetX() + b*pt.GetY() + c) / sqrt(a*a + b*b);
 }
 
 Line::operator=(const Line& other)
