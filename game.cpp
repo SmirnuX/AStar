@@ -12,6 +12,8 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     target_x = 0;
     target_y = 0;
 
+    total_collisions = 0;
+
     //Graphs intitialize
     for (int i = 0; i < SPEED_GUI_SIZE; i++)
     {
@@ -133,10 +135,10 @@ bool game::event(QEvent* ev)   //Event handler
             UI_MODE = PATH;
             break;
         case Qt::Key_F5:
-            UI_MODE = OBJECTS;
+            UI_MODE = RADAR;
             break;
         case Qt::Key_F6:
-            UI_MODE = RADAR;
+            UI_MODE = OBJECTS;
             break;
         }
         return true;
@@ -180,12 +182,12 @@ bool game::event(QEvent* ev)   //Event handler
 
 void game::mousePressEvent(QMouseEvent *event)    //Mouse event handler
 {
-    if (event->button() == Qt::LeftButton && (UI_MODE == GRAPH || UI_MODE == PATH))
+    if (event->button() == Qt::LeftButton && !UI_ACTIVE && UI_MODE != OBJECTS)
     {
         target_x = event->pos().x();
         target_y = event->pos().y();
     }
-    else if (event->button() == Qt::LeftButton && UI_MODE == OBJECTS)
+    else if (event->button() == Qt::LeftButton && !UI_ACTIVE && UI_MODE == OBJECTS)
     {
 
     }
@@ -252,6 +254,8 @@ void game::game_update()  //Function, called every frame
             {
                 if (saved->entity->collision_mask->CheckCollision(stack->current->entity->collision_mask))
                 {
+                    if (saved->entity == player || stack->current->entity == player)
+                        total_collisions++;
                     saved->entity->collision_mask->collisions++;
                     stack->current->entity->collision_mask->collisions++;
                 }
@@ -327,13 +331,13 @@ void game::game_update()  //Function, called every frame
         stack->current->entity->Show();
     }
 
-    for (stack->Reset(); stack->current != NULL; stack->Next())
-    {
-        if (SHOW_COLLIDERS)
-            stack->current->entity->collision_mask->ShowCollider();
-    }
+    showUI();
+    update();
+}
 
 
+void game::showUI() //Show UI
+{
     //Graph updating
     for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
     {
@@ -343,61 +347,60 @@ void game::game_update()  //Function, called every frame
     speeds[SPEED_GUI_SIZE-1] = player->GetSpeed();
     max_speeds[SPEED_GUI_SIZE-1] = player->GetPathMaxSpeed();
 
-    player->map.Show();
-    if (UI_MODE == RADAR)
-    {
-        picture->fill();
-        player->Show();
-        player->map.Show();
-        QPainter pntr(picture);
-        pntr.setPen(QColor(0,0,0));
-        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, F3 - GRAPH, F4 - PATH, F5 - EDITOR, [F6 - VISION]");
-        pntr.drawText(10, 20, "Number of real objects:\t " + QString::number(stack->size));
-        pntr.drawText(10, 30, "Number of found objects:\t " + QString::number(player->map.obstacles.size()));
-    }
-
     //Showing menu
     if (UI_ACTIVE)
         uiUpdate();
 
-    if (SHOW_PATH)  //Showing path, temp speeds and related stuff
-    {
-        if (path_graph != nullptr)
-            path_graph->Show();
-        player->ShowPath();
-        QPainter pntr(picture);
-        pntr.setPen(QColor(255,0,0));
-        pntr.setPen(QColor(0, 0, 255));
-        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
-    }
+    if (UI_MODE == NONE)
+        return;
+
+    //Show UI from different QPainter
     if (UI_MODE == COLLIDERS)
     {
-        QPainter pntr(picture);
-        pntr.setPen(QColor(0,0,0));
-        pntr.drawText(10, 10, "F1 - HIDE, [F2 - COLLISION], F3 - GRAPH, F4 - PATH, F5 - EDITOR");
-        pntr.drawText(10, 20, "Number of objects:\t " + QString::number(stack->size));
+        for (stack->Reset(); stack->current != NULL; stack->Next()) //Show all colliders
+            stack->current->entity->collision_mask->ShowCollider();
     }
     else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
     {
-        int i = 2;
-        for (visible->Reset(); visible->current!=NULL; visible->Next())
-        {
-            if (obst == nullptr)
-                break;
-            ShowObstacle(obst+i);
-            i++;
-        }
-
         if (path_graph != nullptr)
         {
             QPoint mouse_pos = mapFromGlobal( QCursor::pos());
             path_graph->Show(mouse_pos.x(), mouse_pos.y());
         }
-        QPainter pntr(picture);
-        pntr.setPen(QColor(0, 0, 255));
-        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
-        pntr.setPen(QColor(0, 0, 0));
-        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, [F3 - GRAPH], F4 - PATH, F5 - EDITOR");   //Head of UI
+    }
+    else if (UI_MODE == PATH)
+    {
+        if (path_graph != nullptr)
+        {
+            path_graph->Show();
+        }
+        player->ShowPath();
+    }
+    else if (UI_MODE == RADAR)
+    {
+        picture->fill();
+        player->Show();
+        player->map.Show();
+    }
+
+    //Showing chosen UI mode
+    QPainter pntr(picture);
+    pntr.setPen(QColor(0,0,0));
+    pntr.drawText(10, 10, QString("F1 - HIDE, ") +
+                    (UI_MODE == COLLIDERS    ? "[F2 - COLLISION], "  : "F2 - COLLISION, ") +
+                    (UI_MODE == GRAPH        ? "[F3 - GRAPH], "      : "F3 - GRAPH, ") +
+                    (UI_MODE == PATH         ? "[F4 - PATH], "       : "F4 - PATH, ") +
+                    (UI_MODE == RADAR        ? "[F5 - VISION], "     : "F5 - VISION, ") +
+                    (UI_MODE == OBJECTS      ? "[F6 - EDITOR], "     : "F6 - EDITOR, "));
+
+    //Show UI from current QPainter
+    if (UI_MODE == COLLIDERS)
+    {
+        pntr.drawText(10, 20, "Number of objects:\t " + QString::number(stack->size));
+        pntr.drawText(10, 30, "Number of car collisions:\t " + QString::number(total_collisions));
+    }
+    else if (UI_MODE == GRAPH)
+    {
         if (path_graph != nullptr)
         {
             pntr.drawText(10, 20, "Number of vertices\t " + QString::number(path_graph->vertices.size()));
@@ -405,12 +408,12 @@ void game::game_update()  //Function, called every frame
             pntr.drawText(10, 40, "Last graph built in:\t" + QString::number(build_time.count()) + "ms");
             pntr.drawText(10, 50, "Last path found in:\t" + QString::number(pathfind_time.count()) + "ms");
         }
+
+        pntr.setPen(QColor(0, 0, 255));
+        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
     }
-    else if (UI_MODE == PATH)   //Drawing graph, and some related info
+    else if (UI_MODE == PATH)
     {
-        QPainter pntr(picture);
-        pntr.setPen(QColor(0, 0, 0));
-        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, F3 - GRAPH, [F4 - PATH], F5 - EDITOR");   //Head of UI
         if (path_graph != nullptr)
         {
             if (path_graph->found_way)
@@ -423,6 +426,9 @@ void game::game_update()  //Function, called every frame
                 pntr.drawText(10, 20, "Path not found");
             }
         }
+        pntr.setPen(QColor(0, 0, 255));
+        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
+
         //Drawing speed graph
         pntr.setPen(QColor(0, 0, 200));
         int maxy = 40;
@@ -451,38 +457,13 @@ void game::game_update()  //Function, called every frame
         pntr.drawLine(cent_x, cent_y, cent_x + cent_r * cos(player->GetAngle().GetR()), cent_y - cent_r * sin(player->GetAngle().GetR()));
         pntr.setPen(QColor(180,0,0));
         pntr.drawLine(cent_x, cent_y, cent_x + cent_r * cos(player->target_ui_angle.GetR()), cent_y + cent_r * sin(player->target_ui_angle.GetR()));
-
     }
-    else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
+    else if (UI_MODE == RADAR)
     {
-        int i = 2;
-        for (visible->Reset(); visible->current!=NULL; visible->Next())
-        {
-            if (obst == nullptr)
-                break;
-            ShowObstacle(obst+i);
-            i++;
-        }
-
-        if (path_graph != nullptr)
-        {
-            QPoint mouse_pos = mapFromGlobal( QCursor::pos());
-            path_graph->Show(mouse_pos.x(), mouse_pos.y());
-        }
-        QPainter pntr(picture);
-        pntr.setPen(QColor(0, 0, 255));
-        pntr.setPen(QColor(0, 0, 0));
-        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
-        pntr.drawText(10, 10, "F1 - HIDE, F2 - COLLISION, [F3 - GRAPH], F4 - PATH, F5 - EDITOR");   //Head of UI
-        if (path_graph != nullptr)
-        {
-            pntr.drawText(10, 20, "Number of vertices\t " + QString::number(path_graph->vertices.size()));
-            pntr.drawText(10, 30, "Number of edges\t " + QString::number(path_graph->edges.size()));
-            pntr.drawText(10, 40, "Last graph built in:\t" + QString::number(build_time.count()) + "ms");
-            pntr.drawText(10, 50, "Last path found in:\t" + QString::number(pathfind_time.count()) + "ms");
-        }
+        pntr.drawText(10, 20, "Number of real objects:\t " + QString::number(stack->size));
+        pntr.drawText(10, 30, "Number of found objects:\t " + QString::number(player->map.obstacles.size()));
     }
-    update();
+
 }
 
 //Getters

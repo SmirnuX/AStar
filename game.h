@@ -44,6 +44,7 @@ class game : public QMainWindow //Main window
     Q_OBJECT
 private:
     double player_start_x, player_start_y;
+    int total_collisions;
     int width;  //Window width
     int height; //Height width
     bool key[7];    //Input buffer
@@ -75,6 +76,7 @@ public:
     void mousePressEvent(QMouseEvent *event);   //Mouse event handler
     void paintEvent(QPaintEvent* ); //Drawing buffer
     void uiUpdate();
+    void showUI();
 
     bool loadSave(const QJsonDocument &json);
 

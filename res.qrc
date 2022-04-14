@@ -3,4 +3,7 @@
         <file>test.json</file>
         <file>circ_test.json</file>
     </qresource>
+    <qresource prefix="/qt/etc">
+        <file>qt.conf</file>
+    </qresource>
 </RCC>
