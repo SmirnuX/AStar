@@ -245,21 +245,15 @@ void Car::OnStep()
     else
         return;
 
-    for (int i = 1; i < ray_count; i++)
+    for (int i = 0; i < ray_count; i++)
     {
-        Angle ang_pr = -FOV_angle.GetR() / 2 + one_ang * (i-1);
+//        Angle ang_pr = -FOV_angle.GetR() / 2 + one_ang * (i-1);
         Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
-        if (FOV_points[i].distance > 0 && FOV_points[i-1].distance > 0)
+        if (FOV_points[i].distance > 0)
         {
-            Point pt1 = Point(  x + FOV_points[i-1].distance * cos((-(angle) + ang_pr).GetR()),
-                                y + FOV_points[i-1].distance * sin((-(angle) + ang_pr).GetR()));
-            Point pt2 = Point(  x + FOV_points[i].distance * cos((-(angle) + ang).GetR()),
-                                y + FOV_points[i].distance * sin((-(angle) + ang).GetR()));
-            map.AddLine(pt1, pt2, 60);
-        }
-
-//            map.AddPoint(Point(x + FOV_points[i].distance * cos((-(angle) + ang).GetR()),
-//                               y + FOV_points[i].distance * sin((-(angle) + ang).GetR())), 60);
+            map.AddPoint(Point(x + FOV_points[i].distance * cos((-(angle) + ang).GetR()),
+                                           y + FOV_points[i].distance * sin((-(angle) + ang).GetR())), 60);
+        }         
     }
 
 

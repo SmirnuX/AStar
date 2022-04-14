@@ -272,7 +272,7 @@ void ObstacleMap::Show()
     for (int i = 0; i < obstacles.size(); i++)
     {
         QColor col;
-        col.setHsl(30*i%255, 255, 120);
+        col.setHsl(50*i%255, 255, 120);
         penn.setColor(col);
         pntr.setPen(penn);
         for (int j = 0; j < obstacles[i].size(); j++)
@@ -284,5 +284,20 @@ void ObstacleMap::Show()
 
         }
     }
+}
+
+void ObstacleMap::ToAlpha(int i, int d)
+{
+    std::vector<Point> result = obstacles[i];
+    if (result.size() < 3)
+        return;
+    std::sort(result.begin(), result.end(), [](Point a, Point b) {return a.GetX() < b.GetX();});    //Sort by x-value
+    //Create first triangle
+    std::vector<std::pair<int, int>> edges;
+    edges.push_back({0,1});
+    edges.push_back({1,2});
+    edges.push_back({2,0});
+
+
 }
 
