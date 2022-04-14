@@ -179,7 +179,7 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
     collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
 
-    ray_count = 3;
+    ray_count = 7;
 
     //Radar
     FOV_collider = new LineCollider*[ray_count];
@@ -280,24 +280,24 @@ void Car::ShowRadar()
         }
     }
 
-    QPen pen(QColor(255,0,255));
-    pen.setWidth(3);
+//    QPen pen(QColor(255,0,255));
+//    pen.setWidth(3);
 
-    pic_pntr.setPen(pen);
+//    pic_pntr.setPen(pen);
 
-    for (int i = 1; i < ray_count; i++)
-    {
-        Angle ang_pr = -FOV_angle.GetR() / 2 + one_ang * i - one_ang - angle;
-        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i - angle;
-        if (FOV_points[i].distance != -1 && FOV_points[i-1].distance != -1)
-        {
+//    for (int i = 1; i < ray_count; i++)
+//    {
+//        Angle ang_pr = -FOV_angle.GetR() / 2 + one_ang * i - one_ang - angle;
+//        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i - angle;
+//        if (FOV_points[i].distance != -1 && FOV_points[i-1].distance != -1)
+//        {
 
-            pic_pntr.drawLine(x + FOV_points[i-1].distance * cos(ang_pr.GetR()), y + FOV_points[i-1].distance * sin(ang_pr.GetR()),
-                              x + FOV_points[i].distance * cos(ang.GetR()), y + FOV_points[i].distance * sin(ang.GetR()));
-            pic_pntr.drawEllipse(x + FOV_points[i].distance * cos(ang.GetR()) - 2,
-                                 y + FOV_points[i].distance * sin(ang.GetR()) - 2, 4, 4);
-        }
-    }
+//            pic_pntr.drawLine(x + FOV_points[i-1].distance * cos(ang_pr.GetR()), y + FOV_points[i-1].distance * sin(ang_pr.GetR()),
+//                              x + FOV_points[i].distance * cos(ang.GetR()), y + FOV_points[i].distance * sin(ang.GetR()));
+//            pic_pntr.drawEllipse(x + FOV_points[i].distance * cos(ang.GetR()) - 2,
+//                                 y + FOV_points[i].distance * sin(ang.GetR()) - 2, 4, 4);
+//        }
+//    }
 }
 
 void Car::ShowWheels()

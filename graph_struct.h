@@ -47,6 +47,8 @@ public:
 
     obstacle GetObstacle(int i, double r);
 
+    void ToAlpha(int i, int d);
+
 
     void Show();
 };
