@@ -24,7 +24,7 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     stack = new EntityStack();  //Entity stack creation
     visible = new EntityStack();
 
-    QFile save(":/circ_test.json");
+    QFile save(":/test.json");
     qDebug() << save.open(QFile::ReadOnly);
     loadSave(QJsonDocument().fromJson(save.readAll()));
 

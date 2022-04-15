@@ -41,8 +41,6 @@ public:
     void AddPoint(const Point &pt, int d);
     void DeletePoint(Point& pt);
 
-    void AddLine(const Point& pt1, const Point& pt2, double d);
-
     int Size();
 
     obstacle GetObstacle(int i, double r);
