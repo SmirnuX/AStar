@@ -84,6 +84,7 @@ public:
     int GetH();
 public slots:
     void game_update(); //One tact of game
+    void load_scene();
 };
 
 struct pathpoint

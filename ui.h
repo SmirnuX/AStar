@@ -20,8 +20,7 @@ class Ui_DebugMenu: public QWidget
 {
 public:
     QFrame* Menu;
-    //QWidget *Menu;
-    QPushButton *Pause;
+    QPushButton *LoadScene;  //Загрузить сцену
     QCheckBox *ShowCollisions;
     QLabel *label;
     QTableWidget *tableWidget;
@@ -42,16 +41,16 @@ public:
         QWidget* widget = this;
         widget->resize(231, 607);
         Menu = new QFrame(widget);
-        Menu->setGeometry(QRect(0, 0, 231, 607));
+        Menu->setGeometry(QRect(0, 0, 231, 600));
         Menu->setFrameShape(QFrame::Panel);
         Menu->setStyleSheet("");
         Menu->setStyleSheet("background-color: rgb(230,230,230)");
         //Menu = new QWidget(widget);
         //Menu->setObjectName(QString::fromUtf8("Menu"));
-        Pause = new QPushButton(Menu);
-        Pause->setObjectName(QString::fromUtf8("Pause"));
-        Pause->setGeometry(QRect(60, 40, 111, 23));
-        Pause->setCheckable(true);
+        LoadScene = new QPushButton(Menu);
+        LoadScene->setObjectName(QString::fromUtf8("Load Scene"));
+        LoadScene->setGeometry(QRect(60, 40, 111, 23));
+//        Pause->setCheckable(true);
         ShowCollisions = new QCheckBox(Menu);
         ShowCollisions->setObjectName(QString::fromUtf8("ShowCollisions"));
         ShowCollisions->setGeometry(QRect(10, 80, 161, 18));
@@ -96,7 +95,7 @@ public:
 
     void retranslateUi()
     {
-        Pause->setText("Пауза");
+        LoadScene->setText("Загр. сцену");
         ShowCollisions->setText("Показывать столкновения");
         label->setText("Объекты");
         QTableWidgetItem *___qtablewidgetitem = tableWidget->horizontalHeaderItem(0);

@@ -214,34 +214,6 @@ std::vector<int> GetConvexHull(std::vector<Point>&pts, int beg, int end)
     return hull;
 }
 
-//std::vector<std::pair<int, int>> Merge(std::vector<Point>& pts, int beg, int end)
-//{
-//    if (beg - end == 2) //If there is three points
-//    {
-//        return std::vector<std::pair<int,int>> {std::pair<int, int>(beg, beg+1),    //Return triangle
-//                                               std::pair<int, int>(beg+1, end),
-//                                               std::pair<int, int>(end,beg)};
-//    }
-//    if (beg - end == 1) //If there is two points
-//        return std::vector<std::pair<int,int>> {std::pair<int, int>(beg, end)};    //Return line
-//    if (beg == end) //???
-//        return std::vector<std::pair<int,int>>();
-
-//    //Split in halves
-//    auto left = Merge(pts, beg, beg+(end-beg)/2);
-//    auto right = Merge(pts, beg+(end-beg)/2 + 1, end);
-
-//    //Find merge candidates
-//    std::vector<int> left_cand;
-//    std::vector<int> right_cand;
-
-//    //Getting convex hull
-//    auto hull = GetConvexHull(pts, beg, end);
-
-
-
-//}
-
 void ObstacleMap::ToAlpha(int i, int d)
 {
     std::vector<Point> result = obstacles[i];

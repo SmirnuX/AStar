@@ -1,6 +1,8 @@
 #include "game.h"
 #include <ratio>
 #include <QTime>
+#include <QFileDialog>
+
 extern QPixmap* picture;
 extern EntityStack* stack;
 
@@ -31,29 +33,29 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     player = new Car(player_start_x, player_start_y);
     stack->Add((Entity*) player);
 
-    box = new Box(1000, 400);
-    Box* box1 = new Box(1200, 600);
-    HexBox* hex1 = new HexBox(500, 300);
-    Barell* circ1 = new Barell(900, 550, 50);
-    Wall* ln = new Wall(300, 200);
+//    box = new Box(1000, 400);
+//    Box* box1 = new Box(1200, 600);
+//    HexBox* hex1 = new HexBox(500, 300);
+//    Barell* circ1 = new Barell(900, 550, 50);
+//    Wall* ln = new Wall(300, 200);
 
-    stack->Add((Entity*) box);      //Obstacles
-    stack->Add((Entity*) box1);
-    stack->Add((Entity*) hex1);
-    stack->Add((Entity*) circ1);
-    stack->Add((Entity*) ln);
+//    stack->Add((Entity*) box);      //Obstacles
+//    stack->Add((Entity*) box1);
+//    stack->Add((Entity*) hex1);
+//    stack->Add((Entity*) circ1);
+//    stack->Add((Entity*) ln);
 
-    visible->Add((Entity*) box);
-    visible->Add((Entity*) box1);
-    visible->Add((Entity*) hex1);
-    visible->Add((Entity*) circ1);
-    visible->Add((Entity*) ln);
+//    visible->Add((Entity*) box);
+//    visible->Add((Entity*) box1);
+//    visible->Add((Entity*) hex1);
+//    visible->Add((Entity*) circ1);
+//    visible->Add((Entity*) ln);
 
     SHOW_COLLIDERS = true;
     UI_ACTIVE = false;
     Menu = new Ui_DebugMenu(this);
     Menu->setupUi();
-    connect(Menu->Search, SIGNAL(clicked()), this, SLOT(player_set_path()));
+    connect(Menu->LoadScene, SIGNAL(clicked()), this, SLOT(load_scene()));
     Menu->hide();
     PAUSE = false;
     width = w;
@@ -479,7 +481,6 @@ int game::GetH()
 
 void game::uiUpdate()   //UI update
 {
-    PAUSE = Menu->Pause->isChecked();
 
     //List of entities
     Menu->tableWidget->setRowCount(stack->size);
@@ -502,6 +503,27 @@ void game::uiUpdate()   //UI update
         }
         i++;
     }
+}
+
+void game::load_scene()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
+                                                    "",
+                                                    tr("JSON (*.json)"));
+
+
+//    QFileDialog fd(this);
+//    fd.setAcceptMode(QFileDialog::AcceptOpen);
+//    fd.setFileMode(QFileDialog::ExistingFile);
+//    fd.show();
+    qDebug() << fileName;
+    QFile f(fileName);
+    f.open(QFile::ReadOnly);
+    QByteArray json_r = f.readAll();
+
+    QJsonDocument json = QJsonDocument::fromJson(json_r);
+    loadSave(json);
+
 }
 
 bool game::loadSave(const QJsonDocument &json)

@@ -30,3 +30,11 @@ Obstacle finding:
 Controls:
  - Rewrite controls
 
+Features:
+ - Add ability to clear map
+ - Ability to edit level
+ - Ability to save level
+ - Clearing previouse level before loading new
+ - Graph building to parallel lines (?)
+ - Deleting small arcs/linear elements
+
