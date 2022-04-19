@@ -305,3 +305,20 @@ double Car::GetPathMaxSpeed()
         return 0;
     return path->pts[path->i].s;
 }
+
+
+Path::Path(int _num, double tx, double ty)
+{
+    startx = 0;
+    starty = 0;
+    num = _num;
+    pts = new struct pathpoint[_num];
+    i = 0;
+    final_x = tx;
+    final_y = ty;
+}
+
+Path::~Path()
+{
+    delete[] pts;
+}

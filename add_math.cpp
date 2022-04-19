@@ -500,15 +500,15 @@ Matrix Matrix::inverse_without_divide()  //Inverse matrix without division by de
         throw std::runtime_error("Tried to calculate inverse matrix for matrix with zero determinant.");
     }
     Matrix result = Matrix(h, w);
-    double sign = 1;  //Sign of minor
+    double signum = 1;  //Sign of minor
     for (int i = 0; i < h; i++)
     {
         for (int j = 0; j < w; j++)
         {
-            double new_elem = sign * getAddition(0, i).det();
+            double new_elem = signum * getAddition(0, i).det();
 //            new_elem /= _det;
             result.SetElem(new_elem, i, j);
-            sign = -sign;
+            signum = -signum;
         }
     }
     return result;
@@ -551,6 +551,8 @@ void Matrix::Simplify()
 Matrix& Matrix::operator=(Matrix& mx)
 {
     clear();
+    if (this == &mx)
+        return *this;
     h = mx.h;
     w = mx.w;
     if (h >= 0 && w >= 0)

@@ -123,6 +123,9 @@ Line::Line(const Line& other)
 
 Line::Line()
 {
+    a = -1;
+    b = -1;
+    c = 1;
     //Empty body
     min_p = new Point();
     max_p = new Point();
@@ -254,6 +257,7 @@ void Entity::MoveTo(double _x, double _y)
 {
     if (collision_mask != nullptr)
         ((Point*)collision_mask)->MoveTo(_x, _y);
+    Point::MoveTo(_x, _y);
     Show();
 }
 
@@ -300,6 +304,8 @@ void Entity::ShowOutline()
 MovingEntity::MovingEntity(double _x, double _y, double _speed, Angle _angle, Collider* _collider):Entity(_x, _y, _collider)
 {
     speed = _speed;
+    speed_x = _speed * cos(_angle.GetR());
+    speed_y = _speed * sin(_angle.GetR());
     angle = _angle;
     max_speed = 1000;
     friction = 0;
