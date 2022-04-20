@@ -18,6 +18,7 @@ SOURCES += \
     main.cpp \
     objects.cpp \
     path.cpp \
+    ui.cpp \
     vision.cpp
 
 HEADERS += \

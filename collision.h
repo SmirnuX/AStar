@@ -3,6 +3,8 @@
 
 #include "objects.h"
 #include "graph_struct.h"
+#include <QJsonObject>
+#include <QJsonArray>
 #include <limits>
 
 extern QPixmap* picture;
@@ -45,6 +47,8 @@ public:
 
     virtual void SetAngle(Angle _angle);
 
+    virtual QJsonObject toJson() = 0;
+
     virtual obstacle GetOutline(double threshold) = 0;  //Get graph to ride round this object
 
 };
@@ -64,6 +68,8 @@ public:
     bool CheckCollision(CircleCollider* other);     //Collision with circle
     bool CheckCollision(PolygonCollider* other);    //Collision with polygon
     void ShowCollider(QPainter *pntr = nullptr);    //Drawing collision mask
+
+    QJsonObject toJson();
 
     RadarPoint Raycast(Point* start, Angle angle, double length);
 
@@ -95,6 +101,8 @@ public:
     void Turn(Angle angle, Point& pivot);
     void Turn(Angle angle); //Rotate relative to left point
     void SetAngle(Angle angle);
+
+    QJsonObject toJson();
 
     obstacle GetOutline(double threshold);  //Get graph to ride round this object
 };
@@ -129,6 +137,8 @@ public:
     void Turn(Angle angle); //Rotate relative to left point
     void SetAngle(Angle angle);
 
+    QJsonObject toJson();
+
     obstacle GetOutline(double threshold);  //Get graph to ride round this object
 };
 
@@ -155,6 +165,8 @@ public:
     void MoveTo(double _x, double _y);
     void Drag(double dx, double dy);
     void Turn(Angle angle, Point& pivot);
+
+    QJsonObject toJson();
 
     obstacle GetOutline(double threshold);  //Get graph to ride round this object
 };
@@ -187,6 +199,8 @@ public:
     void Turn(Angle angle, Point& pivot);
     void Turn(Angle angle);
     void SetAngle(Angle angle);
+
+    QJsonObject toJson();
 
     obstacle GetOutline(double treshold);  //Get graph to ride round this object
 };

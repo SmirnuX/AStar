@@ -192,6 +192,11 @@ RadarPoint PointCollider::Raycast(Point* start, Angle angle, double length)
     return res;
 }
 
+QJsonObject PointCollider::toJson()
+{
+    return QJsonObject();   //Empty JSON
+}
+
 obstacle PointCollider::GetOutline(double threshold)  //Get graph to ride around this object
 {
     obstacle res;
@@ -459,6 +464,23 @@ void LineCollider::SetAngle(Angle angle)
     updateBB();
 }
 
+QJsonObject LineCollider::toJson()
+{
+    QJsonObject res;
+    res["type"] = "poly";
+    res["num"] = 2;
+    QJsonArray pts;
+    QJsonObject pt;
+    pt["x"] = line->GetMinX();
+    pt["y"] = line->GetMinY();
+    pts.append(pt);
+    pt["x"] = line->GetMaxX();
+    pt["y"] = line->GetMaxY();
+    pts.append(pt);
+    res["pts"] = pts;
+    return res;   //Empty JSON
+}
+
 obstacle LineCollider::GetOutline(double threshold)  //Get graph to ride round this object
 {
     obstacle res;
@@ -717,6 +739,12 @@ void ChainCollider::SetAngle(Angle angle)
     update_eq();
     updateBB();
 }
+
+QJsonObject ChainCollider::toJson()
+{
+    return QJsonObject();   //TEMP
+}
+
 
 obstacle ChainCollider::GetOutline(double threshold)  //Get graph to ride around this object
 {
@@ -1020,6 +1048,17 @@ void CircleCollider::Turn(Angle angle, Point& pivot)
     updateBB();
 }
 
+QJsonObject CircleCollider::toJson()
+{
+    QJsonObject res;
+    res["type"] = "circle";
+    res["x"] = GetX();
+    res["y"] = GetY();
+    res["r"] = circle->GetR();
+    return res;
+}
+
+
 obstacle CircleCollider::GetOutline(double threshold)  //Get graph to ride round this object
 {
     obstacle res;
@@ -1266,6 +1305,23 @@ void PolygonCollider::SetAngle(Angle angle)
         points[i]->Turn(angle, a);
     }
     updateBB();
+}
+
+QJsonObject PolygonCollider::toJson()
+{
+    QJsonObject res;
+    res["type"] = "poly";
+    res["num"] = count;
+    QJsonArray pts;
+    for(int i=0; i < count; i++)
+    {
+        QJsonObject pt;
+        pt["x"] = points[i]->GetX();
+        pt["y"] = points[i]->GetY();
+        pts.append(pt);
+    }
+    res["pts"] = pts;
+    return res;
 }
 
 obstacle PolygonCollider::GetOutline(double threshold)  //Get graph to ride round this object

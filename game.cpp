@@ -11,56 +11,19 @@ extern EntityStack* stack;
 game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     : QMainWindow(parent)
 {
-    target_x = 0;
-    target_y = 0;
-
-    total_collisions = 0;
-
-    //Graphs intitialize
-    for (int i = 0; i < SPEED_GUI_SIZE; i++)
-    {
-        speeds[i] = 0;
-        max_speeds[i] = 0;
-    }
-
-    stack = new EntityStack();  //Entity stack creation
-
-    QFile save(":/test.json");
-    qDebug() << save.open(QFile::ReadOnly);
-
-    player = new Car(100, 100);
-    stack->Add((Entity*) player);
-
-    loadSave(QJsonDocument().fromJson(save.readAll()));\
-
-    player->MoveTo(player_start_x, player_start_y);
-
-    UI_ACTIVE = false;
-    Menu = new Ui_DebugMenu(this);
-    Menu->setupUi();
-    connect(Menu->LoadScene, SIGNAL(clicked()), this, SLOT(load_scene()));
-    Menu->hide();
-    PAUSE = false;
     width = w;
     height = h;
-    resize(width, height);
-    for(int i=0;i<7;i++)    //Input buffer
-        key[i]=false;
 
-    //Updating this every 15ms
-    timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
-    timer->start(15);
+    initWindow();
+    initLevel();
 
-    path_graph = nullptr;
-    uiUpdate();
 }
 
 game::~game()
 {
-    delete path_graph;
-    delete stack;
+    clearLevel();
     delete timer;
+    delete Menu;
 }
 
 bool game::event(QEvent* ev)   //Event handler
@@ -200,7 +163,7 @@ void game::game_update()  //Function, called every frame
         stack->current->entity->EntityUpdate();
     }
 
-    if (SHOW_COLLIDERS) //Collision check
+    if (UI_MODE == COLLIDERS) //Collision check
     {
         for (stack->Reset(); stack->current != NULL; stack->Next())
         {
@@ -282,135 +245,7 @@ void game::game_update()  //Function, called every frame
 }
 
 
-void game::showUI() //Show UI
-{
-    //Graph updating
-    for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
-    {
-        speeds[i] = speeds[i+1];
-        max_speeds[i] = max_speeds[i+1];
-    }
-    speeds[SPEED_GUI_SIZE-1] = player->GetSpeed();
-    max_speeds[SPEED_GUI_SIZE-1] = player->GetPathMaxSpeed();
 
-    //Showing menu
-    if (UI_ACTIVE)
-        uiUpdate();
-
-    if (UI_MODE == NONE)
-        return;
-
-    //Show UI from different QPainter
-    if (UI_MODE == COLLIDERS)
-    {
-        for (stack->Reset(); stack->current != NULL; stack->Next()) //Show all colliders
-            stack->current->entity->collision_mask->ShowCollider();
-    }
-    else if (UI_MODE == GRAPH)   //Drawing graph, and some related info
-    {
-        if (path_graph != nullptr)
-        {
-            QPoint mouse_pos = mapFromGlobal( QCursor::pos());
-            path_graph->Show(mouse_pos.x(), mouse_pos.y());
-        }
-    }
-    else if (UI_MODE == PATH)
-    {
-        if (path_graph != nullptr)
-        {
-            path_graph->Show();
-        }
-        player->ShowPath();
-    }
-    else if (UI_MODE == RADAR)
-    {
-        picture->fill();
-        player->Show();
-        player->map.Show();
-    }
-
-    //Showing chosen UI mode
-    QPainter pntr(picture);
-    pntr.setPen(QColor(0,0,0));
-    pntr.drawText(10, 10, QString("F1 - HIDE, ") +
-                    (UI_MODE == COLLIDERS    ? "[F2 - COLLISION], "  : "F2 - COLLISION, ") +
-                    (UI_MODE == GRAPH        ? "[F3 - GRAPH], "      : "F3 - GRAPH, ") +
-                    (UI_MODE == PATH         ? "[F4 - PATH], "       : "F4 - PATH, ") +
-                    (UI_MODE == RADAR        ? "[F5 - VISION], "     : "F5 - VISION, ") +
-                    (UI_MODE == OBJECTS      ? "[F6 - EDITOR], "     : "F6 - EDITOR, "));
-
-    //Show UI from current QPainter
-    if (UI_MODE == COLLIDERS)
-    {
-        pntr.drawText(10, 20, "Number of objects:\t " + QString::number(stack->size));
-        pntr.drawText(10, 30, "Number of car collisions:\t " + QString::number(total_collisions));
-    }
-    else if (UI_MODE == GRAPH)
-    {
-        if (path_graph != nullptr)
-        {
-            pntr.drawText(10, 20, "Number of vertices\t " + QString::number(path_graph->vertices.size()));
-            pntr.drawText(10, 30, "Number of edges\t " + QString::number(path_graph->edges.size()));
-            pntr.drawText(10, 40, "Last graph built in:\t" + QString::number(build_time.count()) + "ms");
-            pntr.drawText(10, 50, "Last path found in:\t" + QString::number(pathfind_time.count()) + "ms");
-        }
-
-        pntr.setPen(QColor(0, 0, 255));
-        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
-    }
-    else if (UI_MODE == PATH)
-    {
-        if (path_graph != nullptr)
-        {
-            if (path_graph->found_way)
-            {
-                pntr.drawText(10, 20, "Path length:\t " + QString::number(path_graph->way_length));
-                pntr.drawText(10, 30, "Number of waypoints:\t " + QString::number(player->path->num));
-            }
-            else
-            {
-                pntr.drawText(10, 20, "Path not found");
-            }
-        }
-        pntr.setPen(QColor(0, 0, 255));
-        pntr.drawRect(target_x - 5, target_y - 5, 10, 10);  //End point
-
-        //Drawing speed graph
-        pntr.setPen(QColor(0, 0, 200));
-        int maxy = 40;
-        int miny = 80;
-        int stepx = 2;
-        int maxspeed = 8;
-        for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
-        {
-            pntr.drawLine(i*stepx, miny + speeds[i]/maxspeed*(maxy-miny),
-                          (i+1)*stepx, miny + speeds[i+1]/maxspeed*(maxy-miny));
-        }
-        pntr.setPen(QColor(200,0,0));
-        for (int i = 0; i < SPEED_GUI_SIZE-1; i++)
-        {
-            pntr.drawLine(i*stepx, miny + max_speeds[i]/maxspeed*(maxy-miny),
-                          (i+1)*stepx, miny + max_speeds[i+1]/maxspeed*(maxy-miny));
-        }
-
-        //Drawing angle and target angle
-        int cent_x = 800;
-        int cent_y = 40;
-        int cent_r = 38;
-        pntr.setPen(QColor(60,60,60));
-        pntr.drawEllipse(cent_x - cent_r, cent_y - cent_r, 2 * cent_r, 2 * cent_r);
-        pntr.setPen(QColor(0, 180, 0));
-        pntr.drawLine(cent_x, cent_y, cent_x + cent_r * cos(player->GetAngle().GetR()), cent_y - cent_r * sin(player->GetAngle().GetR()));
-        pntr.setPen(QColor(180,0,0));
-        pntr.drawLine(cent_x, cent_y, cent_x + cent_r * cos(player->target_ui_angle.GetR()), cent_y + cent_r * sin(player->target_ui_angle.GetR()));
-    }
-    else if (UI_MODE == RADAR)
-    {
-        pntr.drawText(10, 20, "Number of real objects:\t " + QString::number(stack->size));
-        pntr.drawText(10, 30, "Number of found objects:\t " + QString::number(player->map.obstacles.size()));
-    }
-
-}
 
 //Getters
 int game::GetW()
@@ -425,7 +260,7 @@ int game::GetH()
 
 
 
-void game::load_scene()
+void game::loadFile()   //Open file browser and then load level from JSON
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"),
                                                     "",
@@ -436,15 +271,19 @@ void game::load_scene()
     QByteArray json_r = f.readAll();
 
     QJsonDocument json = QJsonDocument::fromJson(json_r);
-    loadSave(json);
-
+    initLevel();
+    loadLevel(json);
 }
 
-bool game::loadSave(const QJsonDocument &json)
+bool game::loadLevel(const QJsonDocument &json)
 {
-    QJsonObject player = json["player"].toObject();
-    player_start_x = player["x"].toDouble();
-    player_start_y = player["y"].toDouble();
+    QJsonObject _player = json["player"].toObject();
+    player_start_x = _player["x"].toDouble();
+    player_start_y = _player["y"].toDouble();
+
+    if (player != nullptr)
+        player->MoveTo(player_start_x, player_start_y);
+
     QJsonArray objects = json["objects"].toArray();
     for (int i = 0; i < objects.size(); i++)
     {
@@ -471,32 +310,103 @@ bool game::loadSave(const QJsonDocument &json)
     return true;
 }
 
-
-
-void game::uiUpdate()   //Update of UI
+void game::saveFile()   //Open file browser and then save level to JSON
 {
-    //List of entities
-    Menu->tableWidget->setRowCount(stack->size);
-    Menu->tableWidget->setHorizontalHeaderItem(0, new QTableWidgetItem("Объекты"));
-    QItemSelectionModel *select = Menu->tableWidget->selectionModel();
-    int a = -1;
-    if (select->selectedIndexes().size() > 0)
-        a = select->selectedIndexes().first().row();
-    else
-        Menu->Info->setText("");
-    int i = 0;
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Open File"),
+                                                    "",
+                                                    tr("JSON (*.json)"));
+    qDebug() << fileName;
+    QFile f(fileName);
+    f.open(QFile::WriteOnly);
+
+    QJsonDocument save;
+    saveLevel(save);
+
+    f.write(save.toJson());
+}
+
+void game::saveLevel(QJsonDocument& json)
+{
+    QJsonObject res;
+    QJsonObject player_info;
+    player_info["x"] = player->GetX();
+    player_info["y"] = player->GetY();
+    res["player"] = player_info;
+
+    QJsonArray objects;
+
     for (stack->Reset(); stack->current != NULL; stack->Next())
     {
-        Menu->tableWidget->setItem(i, 0, new QTableWidgetItem(stack->current->entity->GetName()));
-        if (i == a) //Showing selected object
+        if (stack->current->entity == player)
+            break;
+        if (stack->current->entity->collision_mask != nullptr)
         {
-            Menu->Info->setText(stack->current->entity->GetInfo());
-            stack->current->entity->ShowOutline();
-            this->setFocus();
+            QJsonObject obj = stack->current->entity->collision_mask->toJson();
+            if (!obj.isEmpty())
+                objects.append(obj);
         }
-        i++;
     }
+    res["objects"] = objects;
+
+    json.setObject(res);
 }
+
+void game::initWindow() //Global initialization
+{
+    //Graph intitialization
+    for (int i = 0; i < SPEED_GUI_SIZE; i++)
+    {
+        speeds[i] = 0;
+        max_speeds[i] = 0;
+    }
+    player = nullptr;
+
+    //Setting up UI
+    UI_ACTIVE = false;
+    Menu = new Ui_DebugMenu(this);
+    Menu->setupUi();
+    connect(Menu->LoadScene, SIGNAL(clicked()), this, SLOT(loadFile()));
+    connect(Menu->SaveScene, SIGNAL(clicked()), this, SLOT(saveFile()));
+    Menu->hide();
+
+    //Window settings
+    resize(width, height);
+    for(int i=0;i<7;i++)    //Input buffer
+        key[i]=false;
+
+    //Updating this every 15ms
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
+    timer->start(15);
+}
+
+void game::initLevel()  //Initialization of level
+{
+    //Target point
+    target_x = 0;
+    target_y = 0;
+
+    total_collisions = 0;   //Number of frames, when car is in collision with obstacles
+
+    stack = new EntityStack();  //Entity stack creation
+
+    player = new Car(100, 100); //Adding car
+    stack->Add((Entity*) player);
+
+    path_graph = nullptr;
+    uiUpdate();
+}
+
+void game::clearLevel() //Clear all obstacles
+{
+    //Delete all obstacles
+    delete path_graph;
+    delete stack;
+}
+
+
+
+
 
 
 

@@ -20,7 +20,8 @@ class Ui_DebugMenu: public QWidget
 {
 public:
     QFrame* Menu;
-    QPushButton *LoadScene;  //Загрузить сцену
+    QPushButton *LoadScene;  //Load level
+    QPushButton *SaveScene;  //Save level
     QCheckBox *ShowCollisions;
     QLabel *label;
     QTableWidget *tableWidget;
@@ -50,6 +51,10 @@ public:
         LoadScene = new QPushButton(Menu);
         LoadScene->setObjectName(QString::fromUtf8("Load Scene"));
         LoadScene->setGeometry(QRect(60, 40, 111, 23));
+        SaveScene = new QPushButton(Menu);
+        SaveScene->setObjectName(QString::fromUtf8("Save Scene"));
+        SaveScene->setGeometry(QRect(60, 70, 111, 23));
+
 //        Pause->setCheckable(true);
         ShowCollisions = new QCheckBox(Menu);
         ShowCollisions->setObjectName(QString::fromUtf8("ShowCollisions"));
@@ -96,6 +101,7 @@ public:
     void retranslateUi()
     {
         LoadScene->setText("Загр. сцену");
+        SaveScene->setText("Сохр. сцену");
         ShowCollisions->setText("Показывать столкновения");
         label->setText("Объекты");
         QTableWidgetItem *___qtablewidgetitem = tableWidget->horizontalHeaderItem(0);

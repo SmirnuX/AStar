@@ -25,7 +25,6 @@
 extern QFile* path_log;
 
 extern QPixmap* picture;
-extern bool SHOW_COLLIDERS;
 
 class Car;
 class EntityStack;
@@ -52,9 +51,6 @@ private:
     graph* path_graph;
     std::chrono::duration<double, std::milli> build_time;
     std::chrono::duration<double, std::milli> pathfind_time;
-    static const int SPEED_GUI_SIZE = 240;
-    double speeds[SPEED_GUI_SIZE];
-    double max_speeds[SPEED_GUI_SIZE];
 
     EntityStack *visible;
     int target_x;
@@ -65,11 +61,19 @@ private:
     Ui_DebugMenu* Menu;
     obstacle* obst = nullptr;
     uint obst_num = 0;
+
+    //UI properties
+    static const int SPEED_GUI_SIZE = 240;
+    double speeds[SPEED_GUI_SIZE];
+    double max_speeds[SPEED_GUI_SIZE];
+
 public:
     Car* player;  //Controlled car
     Box* box;
     game(int w, int h, QWidget *parent = 0);
     ~game();
+
+    void initWindow();
 
     QTimer* timer;
     bool event(QEvent* ev);    //Event handler
@@ -78,13 +82,17 @@ public:
     void uiUpdate();
     void showUI();
 
-    bool loadSave(const QJsonDocument &json);
+    bool loadLevel(const QJsonDocument &json);
+    void saveLevel(QJsonDocument& json);
+    void clearLevel();
+    void initLevel();
 
     int GetW();
     int GetH();
 public slots:
     void game_update(); //One tact of game
-    void load_scene();
+    void loadFile();
+    void saveFile();
 };
 
 struct pathpoint
