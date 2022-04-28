@@ -378,7 +378,51 @@ void game::initWindow() //Global initialization
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(game_update()));
     timer->start(15);
+
+    //Editor mode initialization
+    editing = nullptr; //Point, that is moved by mouse in current moment
+    chosen = nullptr; //Whole entity
+    is_building_poly = false;  //Is new polygon building now?
+
+//    orig_x = 0;
+//    orig_y = 0;
 }
+
+//void game::editor_step(double mx, double my)
+//{
+//    if (editing != nullptr) //If there is captured point
+//    {
+//        editing->MoveTo(mx, my);
+//    }
+//    else if (chosen != nullptr)
+//    {
+//        chosen->MoveTo(mx + orig_x, my + orig_y);
+//    }
+//}
+
+//void game::editor_leftbtn(double mx, double my)
+//{
+//    if (editing != nullptr) //End of moving object/points
+//        editing = nullptr;
+//    else if (chosen != nullptr)
+//        chosen = nullptr;
+//    else
+//    {
+//        EntityStackItem* saved = stack->current;
+//        stack->Next();
+//        for (; stack->current != NULL; stack->Next())
+//        {
+//            if (saved->entity->collision_mask->CheckCollision(stack->current->entity->collision_mask))
+//            {
+//                if (saved->entity == player || stack->current->entity == player)
+//                    total_collisions++;
+//                saved->entity->collision_mask->collisions++;
+//                stack->current->entity->collision_mask->collisions++;
+//            }
+//        }
+//        stack->current = saved;
+//    }
+//}
 
 void game::initLevel()  //Initialization of level
 {

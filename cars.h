@@ -19,6 +19,7 @@ protected:
     Angle rot_speed;    //Angular speed
 
     int ray_count;      //Number of radars
+    double maneuver_dist;
 
     //Size properties
     double radius;
@@ -64,6 +65,9 @@ public:
     void RotateL(const Angle &delta_angle);
     void RotateR();
     void RotateR(const Angle& delta_angle);
+
+    void updateProperties(int ray_count, double ray_dist, Angle fov_angle, double d);
+
 };
 
 class Path;

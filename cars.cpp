@@ -145,6 +145,26 @@ void BaseCar::RotateR(const Angle& delta_angle)
     wheels_angle = -delta_angle;
 }
 
+void BaseCar::updateProperties(int ray_count, double ray_dist, Angle fov_angle, double d)
+{
+//    ray_count = 7;
+
+//    //Radar
+//    FOV_collider = new LineCollider*[ray_count];
+//    double one_ang = FOV_angle.GetR() / (ray_count-1);
+//    FOV_points = new RadarPoint[ray_count];
+//    for (int i = 0; i < ray_count; i++)
+//    {
+//        FOV_points[i] = RadarPoint();
+//        Angle ang = -FOV_angle.GetR() / 2 + one_ang * i;
+//        FOV_collider[i] = new LineCollider(x, y, x + FOV_distance * sin(ang.GetR()), y + FOV_distance * cos(ang.GetR()));
+//    }
+
+
+
+//    radius = distance(0,0,base_width/2,base_length/2);
+}
+
 
 //=== Car class realization ===
 Car::Car(double _x, double _y):BaseCar(_x,_y)
@@ -154,7 +174,7 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     path = nullptr;
     //FOV settings
     FOV_distance = 400;
-    FOV_angle = Angle(30, DEGREES);
+    FOV_angle = Angle(60, DEGREES);
 
     //Speed settings
     acc = 0.3;
@@ -179,7 +199,7 @@ Car::Car(double _x, double _y):BaseCar(_x,_y)
     double y_s[4] = {y + base_width/2, y - base_width/2, y - base_width/2, y + base_width/2};
     collision_mask = (Collider*) new PolygonCollider(x_s, y_s, 4, x, y);
 
-    ray_count = 7;
+    ray_count = 9;
 
     //Radar
     FOV_collider = new LineCollider*[ray_count];

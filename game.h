@@ -67,6 +67,12 @@ private:
     double speeds[SPEED_GUI_SIZE];
     double max_speeds[SPEED_GUI_SIZE];
 
+    //Editor properties
+    Point* editing; //Point, that is moved by mouse in current moment
+    Entity* chosen; //Whole entity
+    bool is_building_poly;  //Is new polygon building now?
+    std::vector<Point> current_pts; //New polygon pts
+
 public:
     Car* player;  //Controlled car
     Box* box;

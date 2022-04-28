@@ -22,12 +22,10 @@ public:
     QFrame* Menu;
     QPushButton *LoadScene;  //Load level
     QPushButton *SaveScene;  //Save level
-    QCheckBox *ShowCollisions;
     QLabel *label;
     QTableWidget *tableWidget;
     QPushButton *Control;
     QPushButton *Search;
-    QCheckBox *ShowPaths;
     QLabel *Info;
     QLabel *label_2;
 
@@ -55,11 +53,6 @@ public:
         SaveScene->setObjectName(QString::fromUtf8("Save Scene"));
         SaveScene->setGeometry(QRect(60, 70, 111, 23));
 
-//        Pause->setCheckable(true);
-        ShowCollisions = new QCheckBox(Menu);
-        ShowCollisions->setObjectName(QString::fromUtf8("ShowCollisions"));
-        ShowCollisions->setGeometry(QRect(10, 80, 161, 18));
-        ShowCollisions->setChecked(true);
         label = new QLabel(Menu);
         label->setObjectName(QString::fromUtf8("label"));
         label->setGeometry(QRect(20, 140, 81, 16));
@@ -80,10 +73,6 @@ public:
         Search->setObjectName(QString::fromUtf8("Search"));
         Search->setGeometry(QRect(50, 560, 131, 23));
         Search->setCheckable(true);
-        ShowPaths = new QCheckBox(Menu);
-        ShowPaths->setObjectName(QString::fromUtf8("ShowPaths"));
-        ShowPaths->setGeometry(QRect(10, 100, 161, 18));
-        ShowPaths->setChecked(true);
         Info = new QLabel(Menu);
         Info->setObjectName(QString::fromUtf8("Info"));
         Info->setGeometry(QRect(20, 400, 191, 111));
@@ -102,13 +91,11 @@ public:
     {
         LoadScene->setText("Загр. сцену");
         SaveScene->setText("Сохр. сцену");
-        ShowCollisions->setText("Показывать столкновения");
         label->setText("Объекты");
         QTableWidgetItem *___qtablewidgetitem = tableWidget->horizontalHeaderItem(0);
         ___qtablewidgetitem->setText("error");
         Control->setText("Взять под контроль");
         Search->setText("Поиск пути");
-        ShowPaths->setText("Показывать пути");
         Info->setText("");
         label_2->setText("Меню отладки");
     } // retranslateUi
