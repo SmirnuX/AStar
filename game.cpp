@@ -2,10 +2,15 @@
 #include <ratio>
 #include <QTime>
 #include <QFileDialog>
+#include <thread>
 
 extern QPixmap* picture;
 extern EntityStack* stack;
 
+void test(int a)
+{
+    qDebug()<< a << " ";
+}
 
 //=== Game class realization ===
 game::game(int w, int h, QWidget *parent)   //Window creation and initialization
@@ -214,7 +219,10 @@ void game::game_update()  //Function, called every frame
             obst[i] = player->map.GetObstacle(i-2, 50);
             i++;
         }
-        path_graph = build_graph(obst, obst_num);
+        if (UI_MODE == GRAPH)
+            path_graph = build_graph_thread(obst, obst_num);
+        else
+            path_graph = build_graph(obst, obst_num);
         auto chr_graph_end = std::chrono::high_resolution_clock::now();
         path_graph->AStar();
         player->graph_to_path(path_graph);

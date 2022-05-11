@@ -1347,3 +1347,425 @@ struct temp_edges get_edges_polygon_to_polygon(std::vector<vertex*>& verts, std:
     }
     return count;
 }
+
+
+void add_line(obstacle* objects, int i, int j, graph* result, std::mutex& res_guard, int count, int _start)
+{
+    std::vector<edge> temp_edges;
+    std::vector<vertex*> temp_verts;
+    struct temp_edges temp_count;
+
+    bool targets = false;
+
+    obstacle* A = objects + i;
+    obstacle* B = objects + j;
+    if (A->shape == POINT && B->shape == POINT) //Point-Point - only one line. Should be called once
+    {
+        temp_count = get_edges_point_to_point(temp_verts, temp_edges, A, B);
+        targets = true;
+    }
+    else if (A->shape == CIRCLE && B->shape == CIRCLE)  //Circle-Circle - 0, 2 or 4 lines
+    {
+        temp_count = get_edges_circle_to_circle(temp_verts, temp_edges, A, B);
+    }
+    else if (A->shape == POLYGON && B->shape == POLYGON)    //Poly-Poly - from 0 to 4N*M lines
+    {
+        temp_count = get_edges_polygon_to_polygon(temp_verts, temp_edges, A, B);
+    }
+    else if (A->shape == POINT || B->shape == POINT)
+    {
+        if (A->shape == CIRCLE || B->shape == CIRCLE)
+            temp_count = get_edges_point_to_circle(temp_verts, temp_edges, A, B);   //Point-Circle - 0 or 2 lines
+        else
+            temp_count = get_edges_point_to_polygon(temp_verts, temp_edges, A, B);   //Point-Poly - up to 2N lines
+    }
+    else    //Circle-Poly - from 0 to 4N lines
+    {
+        temp_count = get_edges_circle_to_polygon(temp_verts, temp_edges, A, B);
+    }
+    //Intersection check and vertice merging
+    for (int k = 0; k < temp_count.temp_edges_count; k++)
+    {
+        bool inter = false;
+        LineCollider lin(temp_edges[k].pA->point->GetX(),
+                     temp_edges[k].pA->point->GetY(),
+                     temp_edges[k].pB->point->GetX(),
+                     temp_edges[k].pB->point->GetY());
+        for (int z = 0; z < count; z++) //Check collisions with every other object
+        {
+            if (z == i || z == j || objects[z].shape == POINT)
+                continue;
+            if (objects[z].shape == CIRCLE) //Intersection with circles
+            {
+                CircleCollider crc(objects[z].point->GetX(),
+                                   objects[z].point->GetY(),
+                                   objects[z].r);
+                if (lin.CheckCollision(&crc))
+                {
+                    inter = true;
+                    break;
+                }
+            }
+            else    //Intersection with polygons
+            {
+                for (uint _i = 0; _i < objects[z].num; _i++)
+                {
+                    edge* edg = objects[z].outline + _i;
+                    if (edg->type == LINEAR)
+                    {
+                        LineCollider lc(edg->A.GetX(), edg->A.GetY(),
+                                        edg->B.GetX(), edg->B.GetY());
+                        if (lin.CheckCollision(&lc))
+                        {
+                            inter = true;
+                            break;
+                        }
+                    }
+                    else    //Intersection with arcs
+                    {
+                        Line edge_ln;
+                        edge_ln.Set(temp_edges[k].pA->point->GetX(), temp_edges[k].pA->point->GetY(),
+                                 temp_edges[k].pB->point->GetX(), temp_edges[k].pB->point->GetY());
+                        if (arc_line_collision(Circle(edg->cx, edg->cy, edg->r),
+                                               edge_ln,
+                                               edg->direction == COUNTERCLOCKWISE ? edg->aA.GetR() : edg->aB.GetR(),
+                                               edg->direction == COUNTERCLOCKWISE ? edg->aB.GetR() : edg->aA.GetR()))
+                        {
+                            inter = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (inter && !targets)    //Don't add intersected edges (and their vertices)
+        {
+            delete temp_edges[k].pA;
+            delete temp_edges[k].pB;
+            continue;
+        }
+        //Merge vertices
+        double eps = 4; //Radius of merging
+        bool first = true;  //Is first vertex edge not merged yet
+        bool sec = true;
+
+        std::lock_guard<std::mutex> a (res_guard); // [ ACQUIRING LOCK ] <= bottleneck
+
+        for (unsigned int z = 0; z < result->vertices.size(); z++) //Z^3-4
+        {
+            if (targets)    //Skip merging for start and end points
+                break;
+            if (first)
+            {
+                if (almostEq(result->vertices[z]->point->GetX(), temp_edges[k].pA->point->GetX(), eps) &&
+                    almostEq(result->vertices[z]->point->GetY(), temp_edges[k].pA->point->GetY(), eps))
+                {
+                    first = false;
+                    delete temp_edges[k].pA;
+                    temp_edges[k].pA = result->vertices[z];
+                }
+            }
+            if (sec)
+            {
+                if (almostEq(result->vertices[z]->point->GetX(), temp_edges[k].pB->point->GetX(), eps) &&
+                    almostEq(result->vertices[z]->point->GetY(), temp_edges[k].pB->point->GetY(), eps))
+                {
+                    sec = false;
+                    delete temp_edges[k].pB;
+                    temp_edges[k].pB = result->vertices[z];
+                }
+            }
+
+        }
+        if (!inter)   //Don't add intersected line from start and end points
+            result->edges.push_back(temp_edges[k]);
+        if (targets)    //Adding start and end points
+        {
+            result->start = result->vertices.size();
+            result->end = result->vertices.size() + 1;
+            if (i == _start)
+            {
+                result->vertices.push_back(temp_edges[k].pA);
+                result->vertices.push_back(temp_edges[k].pB);
+            }
+            else
+            {
+                result->vertices.push_back(temp_edges[k].pB);
+                result->vertices.push_back(temp_edges[k].pA);
+            }
+            targets = false;
+            continue;
+        }
+        if (first)  //If there was no merge, push new vertices
+        {
+            result->vertices.push_back(temp_edges[k].pA);
+        }
+        if (sec)
+        {
+            result->vertices.push_back(temp_edges[k].pB);
+        }
+    }
+    temp_edges.clear();
+    temp_verts.clear();
+}
+
+graph* build_graph_thread(obstacle* objects, int count, uint _start, uint  _end, uint delte) //Building graph, but multithreaded
+{
+    graph* result = new graph();
+
+    std::mutex res_guard;
+
+    //Adding obstacles
+    for (int i = 0; i < count; i++) //Getting all connections between all obstacles
+    {
+        for (int j = i+1; j < count; j++)
+        {
+            auto a = std::async(std::launch::async, [&] () {add_line(objects, i, j, result, res_guard, count, _start);});
+        }
+    }
+
+    //Connecting lines with arcs
+    std::vector<vertex*> brothers;  //Vertices lying on the same obstacle
+    for (int i = 0; i < count; i++)
+    {
+        //"Brothers" search
+        if (objects[i].shape != CIRCLE && objects[i].shape != POLYGON)
+            continue;
+        if (objects[i].shape == CIRCLE) //DIVIDE INTO FUNCTION
+        {
+            for (unsigned int j = 0; j < result->vertices.size(); j++)   //Looking for every vertex with this obstacle as parent
+            {
+                if (result->vertices[j]->parent != objects+i)
+                    continue;
+                brothers.push_back(result->vertices[j]);
+                for (int k = brothers.size()-1; k > 0; k--) //Sort by angle
+                {
+                    if (brothers[k]->angle.GetR() < brothers[k-1]->angle.GetR())
+                    {
+                        vertex* temp = brothers[k];
+                        brothers[k] = brothers[k-1];
+                        brothers[k-1] = temp;
+                    }
+                }
+            }
+            //Creating connecting arcs
+            int n = brothers.size();
+            edge arc;
+            arc.chosen = false;
+            arc.passed = false;
+            arc.type = ARC_CIRCLE;
+            arc.direction = COUNTERCLOCKWISE;
+            arc.cx = objects[i].point->GetX();
+            arc.cy = objects[i].point->GetY();
+            arc.r = objects[i].r;
+
+            for (int j = 0; j < n; j++) //Looking for every vertex on this obstacle
+            {
+                int next = j+1;
+                if (next > n-1)
+                    next = 0;
+
+                //Checking for intersection with other circles
+                bool intersec = false;
+                CircleCollider ptA_c(objects[i].point->GetX(),
+                                    objects[i].point->GetY(), arc.r);
+                for (int k = 0; k < count; k++)
+                {
+                    if (objects[k].shape != CIRCLE || k == i)
+                        continue;
+                    CircleCollider cr_c(objects[k].point->GetX(),
+                                        objects[k].point->GetY(),
+                                        objects[k].r);
+                    if (ptA_c.CheckCollision(&cr_c))
+                    {
+                        //If there is collision - looking for angle of collision
+                        double int_angle = direction_to_point(objects[i].point->GetX(), objects[i].point->GetY(),
+                                                              objects[k].point->GetX(), objects[k].point->GetY());
+                        //Is angle of collision inside of an arc?
+                        double min_a = brothers[j]->angle.GetR();
+                        double max_a = brothers[next]->angle.GetR();
+                        if (min_a > max_a)
+                           min_a -= 2*M_PI;
+                        if (min_a <= int_angle && int_angle <= max_a)
+                        {
+                            intersec = true;
+                            break;
+                        }
+                    }
+                }
+                if (intersec)
+                    continue;
+                //Getting length of arc
+                arc.aA = brothers[j]->angle;
+                arc.aB = brothers[next]->angle;
+                arc.pA = brothers[j];
+                arc.pB = brothers[next];
+                if (brothers[next]->angle.GetR() < brothers[j]->angle.GetR())
+                    arc.length = (brothers[next]->angle.GetR() - brothers[j]->angle.GetR() + 2*M_PI) * arc.r;
+                else
+                    arc.length = fabs((brothers[next]->angle.GetR() - brothers[j]->angle.GetR()) * arc.r);
+                result->edges.push_back(arc);
+            }
+        }
+        else if (objects[i].shape == POLYGON) //DIVIDE INTO FUNCTION
+        {
+            for (unsigned int j = 0; j < result->vertices.size(); j++)   //Looking for every vertex with this obstacle as parent
+            {
+                if (result->vertices[j]->parent != objects+i)
+                    continue;
+                brothers.push_back(result->vertices[j]);
+                assert(result->vertices[j]->poly_i != -1);  //If vertex is on polygon obstacle, it should have index
+                for (int k = brothers.size()-1; k > 0; k--) //Sort by edge index
+                {
+                    if (brothers[k]->poly_i < brothers[k-1]->poly_i)
+                    {
+                        vertex* temp = brothers[k];
+                        brothers[k] = brothers[k-1];
+                        brothers[k-1] = temp;
+                    }
+                }
+            }
+            unsigned int _i = 0;    //Number in brothers vector
+            edge* obst_outline = objects[i].outline;
+            vertex* first = nullptr;
+            if (obst_outline[0].type == LINEAR)
+                first = add_vert(&obst_outline[0].A, objects+i);
+            else
+                first = add_vert(obst_outline[0].cx + obst_outline[0].r * cos(obst_outline[0].aA.GetR()),
+                        obst_outline[0].cy + obst_outline[0].r * sin(obst_outline[0].aA.GetR()),
+                        objects+i);
+            result->vertices.push_back(first);
+            vertex* last = first;
+            for (int j = 0; j < objects[i].num; j++)
+            {
+                vertex* next = nullptr;
+
+                if (obst_outline[j].type == LINEAR) //Duplicating linear edge into graph
+                {
+                    if (j == objects[i].num - 1)
+                    {
+                        next = first;
+                        next->point->MoveTo(obst_outline[j].B.GetX(), obst_outline[j].B.GetY());
+                    }
+                    else
+                    {
+                        next = add_vert(&obst_outline[j].B, objects+i);
+                        result->vertices.push_back(next);
+                    }
+                    edge line;
+                    line.chosen = false;
+                    line.passed = false;
+                    line.type = LINEAR;
+                    line.pA = last;
+                    line.pB = next;
+                    line.length = distance(last->point->GetX(), last->point->GetY(), next->point->GetX(), next->point->GetY());
+                    //The end
+                    last = next;
+                    result->edges.push_back(line);
+                    continue;
+                }
+                //Adding arcs
+                edge arc;   //Template of arc
+                arc.type = ARC_CIRCLE;
+                arc.r = obst_outline[j].r;
+                arc.cx = obst_outline[j].cx;
+                arc.cy = obst_outline[j].cy;
+                arc.direction = COUNTERCLOCKWISE;
+                arc.passed = false;
+                arc.chosen = false;
+
+                std::vector<vertex*> temp_vec;  //Vector of vertices on current arc
+                for (int k = _i; k < brothers.size(); k++)
+                {
+                    if (brothers[k]->poly_i == j)
+                        temp_vec.push_back(brothers[k]);
+                    else
+                    {
+                        _i = k; //End of current segment
+                        break;
+                    }
+                }
+
+                if (j == objects[i].num - 1)
+                {
+                    next = first;
+                    next->angle = obst_outline[j].aB;
+                }
+                else
+                {
+                    next = add_vert(obst_outline[j].cx + obst_outline[j].r * cos(obst_outline[j].aB.GetR()),
+                            obst_outline[j].cy + obst_outline[j].r * sin(obst_outline[j].aB.GetR()),
+                            objects+i);
+                    next->angle = obst_outline[j].aB;
+                    result->vertices.push_back(next);
+                }
+                last->angle = obst_outline[j].aA;
+
+                if (temp_vec.size() == 0)   //If there is no vertices on this arc
+                {
+                    arc.aA = obst_outline[j].aA;
+                    arc.aB = obst_outline[j].aB;
+                    arc.pA = last;
+                    arc.pB = next;
+                    if (arc.aB.GetR() < arc.aA.GetR())  //Getting length
+                        arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                    else
+                        arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                    result->edges.push_back(arc);
+                }
+                else
+                {
+                    double startA = obst_outline[j].aA.GetR();  //Start angle of arc [0; 2PI]
+                    double endA = obst_outline[j].aB.GetR();    //End angle of arc [0; 4PI]
+                    if (endA < startA)
+                        endA += 2 * M_PI;
+                    //Sort by angle
+                    std::sort(temp_vec.begin(), temp_vec.end(),
+                              [&] (vertex* a, vertex* b) -> bool
+                    {
+                        double aA = a->angle.GetR() > startA ? a->angle.GetR() : a->angle.GetR() + 2*M_PI;
+                        double bA = b->angle.GetR() > startA ? b->angle.GetR() : b->angle.GetR() + 2*M_PI;
+                        return  aA < bA;
+                    });
+                    //First arc
+                    arc.pA = last;
+                    arc.pB = temp_vec[0];
+                    arc.aA = arc.pA->angle;
+                    arc.aB = arc.pB->angle;
+                    if (arc.aB.GetR() < arc.aA.GetR())
+                        arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                    else
+                        arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                    result->edges.push_back(arc);
+                    //Middle connections
+                    for (int k = 0; k < temp_vec.size()-1; k++)
+                    {
+                        arc.pA = temp_vec[k];
+                        arc.pB = temp_vec[k+1];
+                        arc.aA = arc.pA->angle;
+                        arc.aB = arc.pB->angle;
+                        if (arc.aB.GetR() < arc.aA.GetR())
+                            arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                        else
+                            arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                        result->edges.push_back(arc);
+                    }
+                    //Last connection
+                    arc.pA = temp_vec[temp_vec.size()-1];
+                    arc.pB = next;
+                    arc.aA = arc.pA->angle;
+                    arc.aB = arc.pB->angle;
+                    if (arc.aB.GetR() < arc.aA.GetR())
+                        arc.length = (arc.aB.GetR() - arc.aA.GetR() + 2*M_PI) * arc.r;
+                    else
+                        arc.length = fabs((arc.aB.GetR() - arc.aA.GetR()) * arc.r);
+                    result->edges.push_back(arc);
+                }
+                last = next;
+            }
+        }
+        //Clearing
+        brothers.clear();
+    }
+    return result;
+}

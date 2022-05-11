@@ -8,6 +8,9 @@ constexpr unsigned int MAX_PATH_COST = 1000000;
 #include "objects.h"
 #include "collision.h"
 #include "graph_struct.h"
+#include <thread>
+#include <mutex>
+#include <future>
 
 
 
@@ -44,7 +47,10 @@ void DeleteObstacle(obstacle* obst);
 
 vertex* add_vert(double x, double y, obstacle* _parent, Angle _angle = Angle(0));
 vertex* add_vert(Point* pt, obstacle* _parent, Angle _angle = Angle(0));
-graph* build_graph(obstacle* objects, int count,  uint _start=0, uint _end=1, uint delte = 10);
+graph* build_graph(obstacle* objects, int count, uint _start=0, uint _end=1, uint delte = 10);
+graph* build_graph_thread(obstacle* objects, int count, uint _start=0, uint _end=1, uint delte = 10); //Building graph, but multithreaded
+
+void add_line(obstacle* objects, int i, int j, graph* result, std::mutex& res_guard);   //Add line between two objects
 
 struct temp_edges get_edges_point_to_point(std::vector<vertex*>& verts, std::vector<edge>& edges,
                                            struct obstacle* A, struct obstacle* B);  //Add line from point A to point B
