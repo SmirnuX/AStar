@@ -1451,6 +1451,8 @@ void add_line(obstacle* objects, int i, int j, graph* result, std::mutex& res_gu
 
         std::lock_guard<std::mutex> a (res_guard); // [ ACQUIRING LOCK ] <= bottleneck
 
+//        qDebug() << i << " : " << j << ", ";
+
         for (unsigned int z = 0; z < result->vertices.size(); z++) //Z^3-4
         {
             if (targets)    //Skip merging for start and end points
@@ -1505,8 +1507,6 @@ void add_line(obstacle* objects, int i, int j, graph* result, std::mutex& res_gu
             result->vertices.push_back(temp_edges[k].pB);
         }
     }
-    temp_edges.clear();
-    temp_verts.clear();
 }
 
 graph* build_graph_thread(obstacle* objects, int count, uint _start, uint  _end, uint delte) //Building graph, but multithreaded
@@ -1515,13 +1515,25 @@ graph* build_graph_thread(obstacle* objects, int count, uint _start, uint  _end,
 
     std::mutex res_guard;
 
+    std::vector<std::future<int>> futures;
+
     //Adding obstacles
     for (int i = 0; i < count; i++) //Getting all connections between all obstacles
     {
         for (int j = i+1; j < count; j++)
         {
-            auto a = std::async(std::launch::async, [&] () {add_line(objects, i, j, result, res_guard, count, _start);});
+            futures.push_back(
+                std::async(std::launch::async, [&objects, i, j, result, &res_guard, count, _start] {
+                    add_line(objects, i, j, result, res_guard, count, _start);
+                    return 0;}
+                )
+            );
         }
+    }
+
+    for (std::future<int>& fut : futures)
+    {
+        fut.wait();
     }
 
     //Connecting lines with arcs
