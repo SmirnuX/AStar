@@ -1,5 +1,7 @@
 #include "game.h"
 #include "objects.h"
+#include <QThread>
+#include <QThreadPool>
 
 //=== Comparing of two vertices - for std::priority_queue ===
 graph_cmp::graph_cmp(vertex* _ptr)
@@ -1515,23 +1517,34 @@ graph* build_graph_thread(obstacle* objects, int count, uint _start, uint  _end,
 
     std::mutex res_guard;
 
-    std::vector<std::future<int>> futures;
+    std::vector<std::future<int>> futures;    //std::async version
 
     //Adding obstacles
     for (int i = 0; i < count; i++) //Getting all connections between all obstacles
     {
         for (int j = i+1; j < count; j++)
         {
-            futures.push_back(
+            futures.push_back(  //std::async version
                 std::async(std::launch::async, [&objects, i, j, result, &res_guard, count, _start] {
                     add_line(objects, i, j, result, res_guard, count, _start);
                     return 0;}
                 )
             );
+
+//            QThreadPool::globalInstance()->start(   //QThread version
+//                QRunnable::create(
+//                    [&objects, i, j, result, &res_guard, count, _start] {
+//                        add_line(objects, i, j, result, res_guard, count, _start);}
+//                )
+//            );
+
+
         }
     }
 
-    for (std::future<int>& fut : futures)
+//    QThreadPool::globalInstance()->waitForDone();   //QThread version
+
+    for (std::future<int>& fut : futures)   //std::async version
     {
         fut.wait();
     }

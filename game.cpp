@@ -19,6 +19,8 @@ game::game(int w, int h, QWidget *parent)   //Window creation and initialization
     width = w;
     height = h;
 
+    qDebug() << "thread count: " << QThreadPool::globalInstance()->maxThreadCount();
+
     initWindow();
     initLevel();
 
