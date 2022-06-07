@@ -205,20 +205,20 @@ graph* build_graph(obstacle* objects, int count, uint _start, uint  _end, uint d
                                     break;
                                 }
                             }
-                            else    //Intersection with arcs
-                            {
-                                Line edge_ln;
-                                edge_ln.Set(temp_edges[k].pA->point->GetX(), temp_edges[k].pA->point->GetY(),
-                                         temp_edges[k].pB->point->GetX(), temp_edges[k].pB->point->GetY());
-                                if (arc_line_collision(Circle(edg->cx, edg->cy, edg->r),
-                                                       edge_ln,
-                                                       edg->direction == COUNTERCLOCKWISE ? edg->aA.GetR() : edg->aB.GetR(),
-                                                       edg->direction == COUNTERCLOCKWISE ? edg->aB.GetR() : edg->aA.GetR()))
-                                {
-                                    inter = true;
-                                    break;
-                                }
-                            }
+//                            else    //Intersection with arcs
+//                            {
+//                                Line edge_ln;
+//                                edge_ln.Set(temp_edges[k].pA->point->GetX(), temp_edges[k].pA->point->GetY(),
+//                                         temp_edges[k].pB->point->GetX(), temp_edges[k].pB->point->GetY());
+//                                if (arc_line_collision(Circle(edg->cx, edg->cy, edg->r),
+//                                                       edge_ln,
+//                                                       edg->direction == COUNTERCLOCKWISE ? edg->aA.GetR() : edg->aB.GetR(),
+//                                                       edg->direction == COUNTERCLOCKWISE ? edg->aB.GetR() : edg->aA.GetR()))
+//                                {
+//                                    inter = true;
+//                                    break;
+//                                }
+//                            }
                         }
                     }
                 }
@@ -1014,6 +1014,7 @@ struct temp_edges get_edges_point_to_polygon(std::vector<vertex*>& verts, std::v
     count.temp_vertices_count = 0;
     count.temp_edges_count = 0;
 
+
     for (int i = 0; i < poly->num; i++)
     {
         if (poly->outline[i].type == LINEAR)
@@ -1043,19 +1044,20 @@ struct temp_edges get_edges_point_to_polygon(std::vector<vertex*>& verts, std::v
             count.temp_vertices_count += 2;
             count.temp_edges_count++;
         }
+
         //Trying to build second tangent
-        tang_angle = Angle(angle - outer_angle).GetR(); //Angle between center of an arc and tangent
+        double sec_tang_angle = Angle(angle - outer_angle).GetR(); //Angle between center of an arc and tangent
         if (angle_between(
                     curr_edge->direction == COUNTERCLOCKWISE ? curr_edge->aA.GetR() : curr_edge->aB.GetR(),
-                    tang_angle,
+                    sec_tang_angle,
                     curr_edge->direction == COUNTERCLOCKWISE ? curr_edge->aB.GetR() : curr_edge->aA.GetR()))
         {
             int j = verts.size();
             verts.push_back(add_vert(pt->point->GetX(),
                                      pt->point->GetY(), pt));
-            verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(tang_angle),
-                                     curr_edge->cy + curr_edge->r * sin(tang_angle),
-                                     poly, tang_angle));        
+            verts.push_back(add_vert(curr_edge->cx + curr_edge->r * cos(sec_tang_angle),
+                                     curr_edge->cy + curr_edge->r * sin(sec_tang_angle),
+                                     poly, sec_tang_angle));
             line.pA = verts[j];
             verts[j+1]->poly_i = i;
             line.pB = verts[j+1];
@@ -1423,20 +1425,20 @@ void add_line(obstacle* objects, int i, int j, graph* result, std::mutex& res_gu
                             break;
                         }
                     }
-                    else    //Intersection with arcs
-                    {
-                        Line edge_ln;
-                        edge_ln.Set(temp_edges[k].pA->point->GetX(), temp_edges[k].pA->point->GetY(),
-                                 temp_edges[k].pB->point->GetX(), temp_edges[k].pB->point->GetY());
-                        if (arc_line_collision(Circle(edg->cx, edg->cy, edg->r),
-                                               edge_ln,
-                                               edg->direction == COUNTERCLOCKWISE ? edg->aA.GetR() : edg->aB.GetR(),
-                                               edg->direction == COUNTERCLOCKWISE ? edg->aB.GetR() : edg->aA.GetR()))
-                        {
-                            inter = true;
-                            break;
-                        }
-                    }
+//                    else    //Intersection with arcs
+//                    {
+//                        Line edge_ln;
+//                        edge_ln.Set(temp_edges[k].pA->point->GetX(), temp_edges[k].pA->point->GetY(),
+//                                 temp_edges[k].pB->point->GetX(), temp_edges[k].pB->point->GetY());
+//                        if (arc_line_collision(Circle(edg->cx, edg->cy, edg->r),
+//                                               edge_ln,
+//                                               edg->direction == COUNTERCLOCKWISE ? edg->aA.GetR() : edg->aB.GetR(),
+//                                               edg->direction == COUNTERCLOCKWISE ? edg->aB.GetR() : edg->aA.GetR()))
+//                        {
+//                            inter = true;
+//                            break;
+//                        }
+//                    }
                 }
             }
         }
@@ -1517,37 +1519,37 @@ graph* build_graph_thread(obstacle* objects, int count, uint _start, uint  _end,
 
     std::mutex res_guard;
 
-    std::vector<std::future<int>> futures;    //std::async version
+//    std::vector<std::future<int>> futures;    //std::async version
 
     //Adding obstacles
     for (int i = 0; i < count; i++) //Getting all connections between all obstacles
     {
         for (int j = i+1; j < count; j++)
         {
-            futures.push_back(  //std::async version
-                std::async(std::launch::async, [&objects, i, j, result, &res_guard, count, _start] {
-                    add_line(objects, i, j, result, res_guard, count, _start);
-                    return 0;}
-                )
-            );
-
-//            QThreadPool::globalInstance()->start(   //QThread version
-//                QRunnable::create(
-//                    [&objects, i, j, result, &res_guard, count, _start] {
-//                        add_line(objects, i, j, result, res_guard, count, _start);}
+//            futures.push_back(  //std::async version
+//                std::async(std::launch::async, [&objects, i, j, result, &res_guard, count, _start] {
+//                    add_line(objects, i, j, result, res_guard, count, _start);
+//                    return 0;}
 //                )
 //            );
+
+            QThreadPool::globalInstance()->start(   //QThread version
+                QRunnable::create(
+                    [&objects, i, j, result, &res_guard, count, _start] {
+                        add_line(objects, i, j, result, res_guard, count, _start);}
+                )
+            );
 
 
         }
     }
 
-//    QThreadPool::globalInstance()->waitForDone();   //QThread version
+    QThreadPool::globalInstance()->waitForDone();   //QThread version
 
-    for (std::future<int>& fut : futures)   //std::async version
-    {
-        fut.wait();
-    }
+//    for (std::future<int>& fut : futures)   //std::async version
+//    {
+//        fut.wait();
+//    }
 
     //Connecting lines with arcs
     std::vector<vertex*> brothers;  //Vertices lying on the same obstacle

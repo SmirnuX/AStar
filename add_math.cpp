@@ -214,15 +214,16 @@ double anglediff(const Angle& left, const Angle& right)    //Angle difference in
     return da;
 }
 
-bool angle_between(double min_angle, double angle ,double max_angle)    //Is angle between min_angle and max_angle?
+bool angle_between(double min_angle, double angle, double max_angle)    //Is angle between min_angle and max_angle?
 {
+    double eps = 0.1;
     if (max_angle < min_angle)
     {
         max_angle += 2 * M_PI;
     }
-    if (min_angle < angle && angle < max_angle)
+    if (min_angle - eps < angle && angle < max_angle + eps)
         return true;
-    return (min_angle < angle + 2*M_PI && angle + 2*M_PI < max_angle);
+    return (min_angle - eps < (angle + 2*M_PI) && (angle + 2*M_PI) < max_angle + eps);
 }
 
 

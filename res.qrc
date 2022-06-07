@@ -5,6 +5,7 @@
         <file>walls_test.json</file>
         <file>cars_test.json</file>
         <file>circ_test_2.json</file>
+        <file>test2.json</file>
     </qresource>
     <qresource prefix="/qt/etc">
         <file>qt.conf</file>
