@@ -559,7 +559,7 @@ void Poly::Show()
 
 QString Poly::GetName()
 {
-    return "Полигон";
+    return "Многоугольник";
 }
 
 Poly::~Poly()

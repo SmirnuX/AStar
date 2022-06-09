@@ -422,7 +422,7 @@ void Car::ShowLights()
 
 QString Car::GetName()
 {
-    return "Машина";
+    return "Автомобиль";
 }
 
 

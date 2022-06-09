@@ -931,11 +931,11 @@ struct temp_edges get_edges_circle_to_circle(std::vector<vertex*>& verts, std::v
         line.pA = verts[4];
         line.pB = verts[5];
         line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-        edges[2] = line;
+        edges.push_back(line);
         line.pA = verts[6];
         line.pB = verts[7];
         line.length = sqrt(distance2(*(line.pA->point), *(line.pB->point)));
-        edges[3] = line;
+        edges.push_back(line);
     }
     return count;
 }

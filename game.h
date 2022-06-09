@@ -52,7 +52,6 @@ private:
     std::chrono::duration<double, std::milli> build_time;
     std::chrono::duration<double, std::milli> pathfind_time;
 
-    EntityStack *visible;
     int target_x;
     int target_y;
     bool PAUSE;

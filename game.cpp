@@ -208,18 +208,45 @@ void game::game_update()  //Function, called every frame
             obst = nullptr;
             obst_num = 0;
         }
-        obst = new obstacle [player->map.Size()+2];   //Two is for start and end points.
-        obst_num = player->map.Size()+2;
+
+        bool IS_SAVED = true;  //Is whole map already in memory
+        if (IS_SAVED)
+        {
+            obst = new obstacle [stack->size+1];   //Two is for start and end points, -1 for player
+            obst_num = stack->size+1;
+        }
+        else
+        {
+            obst = new obstacle [player->map.Size()+2];   //Two is for start and end points.
+            obst_num = player->map.Size()+2;
+        }
+
+
         obst[0].shape = POINT;
         obst[0].point = new Point(player->GetX(), player->GetY());
         obst[1].shape = POINT;
         obst[1].point = new Point(target_x, target_y);
         uint i = 2;
 
-        for (; i < obst_num;)
+        if (IS_SAVED)
         {
-            obst[i] = player->map.GetObstacle(i-2, 50);
-            i++;
+            for (stack->Reset(); stack->current!=NULL; stack->Next())
+            {
+                if  (stack->current->entity == player)
+                    continue;
+                obst[i] = stack->current->entity->collision_mask->GetOutline(70);
+                i++;
+                if (i == obst_num)
+                    break;
+            }
+        }
+        else
+        {
+            for (; i < obst_num;)
+            {
+                obst[i] = player->map.GetObstacle(i-2, 70);
+                i++;
+            }
         }
         if (UI_MODE == GRAPH)
             path_graph = build_graph_thread(obst, obst_num);
